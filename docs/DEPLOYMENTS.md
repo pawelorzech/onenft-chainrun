@@ -2,21 +2,21 @@
 
 Last verified: 2026-09-05
 
-## Base Sepolia (84532), 2026-09-05
+## Base Sepolia (84532), 2026-09-05, third deployment
 
 | Contract | Address |
 |---|---|
-| OneNFT (`chainrun.onenft.click`, `RUNDAY`) | `0x7C745F4eA367A7A3CD596219A4E428F2eA9A8C4c` |
-| RunnerRenderer | `0x9Db0AEE0e6EE9817A86f6c9CC8Cb85327f28462D` |
-| store0 (layers 0..58) | `0xF90b5141F891FDB76663212C864eb11375Af3783` |
-| store1 (layers 59..117) | `0x516279aB462b66f8911C0eDeF4F7C9593D741aAf` |
-| store2 (layers 118..176) | `0x2f0295a14a73034b7Bc4127dc2c401aAcd959b36` |
-| store3 (layers 177..235) | `0x0e5a1223042a7f266C5d22229751750861E89EBf` |
-| store4 (layers 236..294) | `0x37747e1c6221848807B2fA060dbf4Be798361752` |
-| store5 (layers 295..337) | `0x4d38ECB429Fa4862Dfe639524C7C5c9bfE0373F2` |
-| meta (weights, slot index, names) | `0xDE5DB2A724A9A26a323dBEC63cCF70072b6Acb5a` |
+| OneNFT (`chainrun.onenft.click`, `RUNDAY`) | `0x4Bd8F79bE4862544cbA135b87a139Be0e3004a72` |
+| RunnerRenderer | `0x58529c06a474d4A46Babcf5c6b8f0CDc6CDE73B6` |
+| store0 (layers 0..58) | `0xF5584197FAbBd23C8858C379cC1eb61A7fa589fE` |
+| store1 (layers 59..117) | `0x2D1b3D8686799973F677745651db69005B4AA0db` |
+| store2 (layers 118..176) | `0xa5EC64050248350A1116485DF73755B12722A558` |
+| store3 (layers 177..235) | `0x1c6b6a00bb949e50668c2b38aCF798043C0a5Cfa` |
+| store4 (layers 236..294) | `0xF597D7bD4467A501a7634dD53Be63E1c7261bcdB` |
+| store5 (layers 295..337) | `0xd54563F0556480a77A306014D9A960a296C440F3` |
+| meta (weights, slot index, names) | `0x7f3E7C2350059891F7610eD41ae5Af51D3630B06` |
 
-startEpoch 20701 (2026-09-05). Site: https://chainrun-test.onenft.click. A first attempt the same day left an orphaned set of stores and a renderer at `0x05545c0089A73eE5de1c16641489D2DbB42988c4`; the token deploy was rejected for gas and nothing points at them.
+startEpoch 20701 (2026-09-05). Site: https://chainrun-test.onenft.click. Two earlier sets the same day are orphaned: the first (renderer `0x05545c0089A73eE5de1c16641489D2DbB42988c4`) never got a token because the 20M-gas `tokenURI` was rejected; the second (token `0x7C745F4eA367A7A3CD596219A4E428F2eA9A8C4c`, renderer `0x9Db0AEE0e6EE9817A86f6c9CC8Cb85327f28462D`) holds a test claim of day 1. Nothing points at them.
 
 ## Base mainnet (8453)
 
