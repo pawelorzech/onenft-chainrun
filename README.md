@@ -2,7 +2,7 @@
 
 One Chain Runner a day, drawn on chain from the clock of the Base chain. Every day at midnight UTC the contract draws one runner from the day number with the 338 CC0 Chain Runners layers and the original's weight tables. Nobody picks the traits and nobody can delay it. A day nobody claims stays empty forever.
 
-Live: **https://chainrun.onenft.click** · A sister of [onenft.click](https://onenft.click)
+Live: **https://chainrun.onenft.click** · Contract: [`0x748b…Bb58` on Base](https://basescan.org/address/0x748b55c3762FE2a697DC268eD19743e22481Bb58) · A sister of [onenft.click](https://onenft.click)
 
 ## How it works
 
