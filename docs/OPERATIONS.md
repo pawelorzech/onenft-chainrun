@@ -15,6 +15,10 @@ forge verify-contract <renderer> src/RunnerRenderer.sol:RunnerRenderer --verifie
   --constructor-args $(cast abi-encode "c(uint256,address[6],address)" <startEpoch> "[<s0>,<s1>,<s2>,<s3>,<s4>,<s5>]" <meta>)
 ```
 
+## After every deploy
+
+`contracts/check.sh sepolia|mainnet` compares every data store's code with the fixture blob byte for byte and the renderer's `svg()` for an early, a late and a far day with the TypeScript output. The constructors only check blob lengths, so two same-size blobs in the wrong order would pass them; this script is what catches it. Run it before `wire.sh`.
+
 ## Change the drawing
 
 Edit `src/runners.ts`, run `bun test`, `bun run contracts/fixtures.ts`, port the change to `RunnerRenderer.sol`, run `forge test` and check `--gas-report`. Deploy a new renderer (the stores can be reused: pass the existing addresses) and switch with `setRenderer` from the author wallet. Claimed days keep their renderer.
