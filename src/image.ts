@@ -10,6 +10,26 @@ import { dateOf, type Day } from "./chain.ts";
 const fontDir = new URL("../assets/fonts/", import.meta.url).pathname;
 const FONTS = [fontDir + "Syne-ExtraBold.ttf", fontDir + "Newsreader.ttf"];
 const cache = new Map<number, Uint8Array>();
+/**
+ * Today's images are not immutable (the renderer can still change for an
+ * unclaimed day), but they are the same for everyone: they are kept for a few
+ * minutes so a burst of requests never rasterizes the same file twenty times.
+ */
+const TODAY_TTL_MS = 5 * 60_000;
+const recent = new Map<string, { at: number; png: Uint8Array }>();
+function remembered(key: string, immutable: boolean, store: Map<number, Uint8Array>, n: number, draw: () => Uint8Array): Uint8Array {
+  const hit = store.get(n);
+  if (hit) return hit;
+  const r = recent.get(key);
+  if (r && Date.now() - r.at < TODAY_TTL_MS) return r.png;
+  const png = draw();
+  if (immutable) store.set(n, png);
+  else {
+    if (recent.size > 64) recent.clear();
+    recent.set(key, { at: Date.now(), png });
+  }
+  return png;
+}
 
 function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
@@ -35,9 +55,12 @@ export function cardSvg(day: Day): string {
 }
 
 export function dayPng(day: Day, immutable: boolean): Uint8Array {
-  const hit = cache.get(day.n);
-  if (hit) return hit;
-  const png = new Resvg(cardSvg(day), { fitTo: { mode: "width", value: 1200 }, font: { fontFiles: FONTS, loadSystemFonts: false, defaultFontFamily: "Newsreader" } }).render().asPng();
-  if (immutable) cache.set(day.n, png);
-  return png;
+  return remembered(`card${day.n}`, immutable, cache, day.n, () => new Resvg(cardSvg(day), { fitTo: { mode: "width", value: 1200 }, font: { fontFiles: FONTS, loadSystemFonts: false, defaultFontFamily: "Newsreader" } }).render().asPng());
+}
+
+/** The runner itself as a square PNG, for the download links that work without JavaScript. Pixel art, so no smoothing. */
+export const SQUARE_PX = 1024;
+const squares = new Map<number, Uint8Array>();
+export function squarePng(day: Day, immutable: boolean): Uint8Array {
+  return remembered(`square${day.n}`, immutable, squares, day.n, () => new Resvg(runnerFor(day.epoch).svg, { fitTo: { mode: "width", value: SQUARE_PX }, imageRendering: 1 }).render().asPng());
 }

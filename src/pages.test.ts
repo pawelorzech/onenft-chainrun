@@ -16,6 +16,7 @@ function fakeChain(day: number, owners: Record<number, string>): ChainState {
     renderer: "0x3333333333333333333333333333333333333333",
     rendererLocked: false,
     secondsLeft: 2000,
+    readAt: Date.now(),
     owners: new Map(Object.entries(owners).map(([k, v]) => [Number(k), v as `0x${string}`])),
     claims: new Map([[1, { day: 1, to: A, tx: "0xabc", block: 5n, at: Number(dayByNumber(1)!.startsAt) + 1087, renderer: "0x3333333333333333333333333333333333333333" }]]),
   };
@@ -128,22 +129,32 @@ test("yours page: connect button only when the chain answers, the form always", 
   expect(yoursPage(t, fakeChain(5, {}))).toContain('id="connect"');
   expect(yoursPage(t, null)).not.toContain('id="connect"');
   expect(yoursPage(t, null)).toContain('action="/go"');
-  expect(yoursPage(t, null)).toContain("The chain did not answer");
+  expect(yoursPage(t, null)).not.toContain("The chain did not answer");
+  const down = { configured: true, known: false, stale: false, readAt: null, ageSeconds: null, error: "x", errorAt: 1, scannedBlock: "0" };
+  expect(yoursPage(t, null, down)).toContain("The chain did not answer");
+  expect(yoursPage(t, null, null, "junk")).toContain("is not a wallet address or an ENS name");
+  expect(yoursPage(t, null, null, '<b>"')).toContain("&lt;b&gt;&quot;");
+  expect(yoursPage(t, null)).toContain('<label for="who">');
+  expect(yoursPage(t, null)).toContain("View wallet");
+  expect(yoursPage(t, null)).toContain("Viewing a wallet needs no transaction");
 });
 
 test("/go accepts an address or an ENS name and bounces the rest", () => {
   expect(goTarget("0x2222222222222222222222222222222222222222")).toBe("/0x2222222222222222222222222222222222222222");
   expect(goTarget(" pawelorzech.eth ")).toBe("/pawelorzech.eth");
   expect(goTarget("sub.name.eth", "/wallet/")).toBe("/wallet/sub.name.eth");
-  expect(goTarget("junk")).toBe("/yours");
-  expect(goTarget(null)).toBe("/yours");
-  expect(goTarget("0x22")).toBe("/yours");
+  expect(goTarget("junk")).toBe("/yours?bad=junk");
+  expect(goTarget(null)).toBe("/yours?bad=");
+  expect(goTarget("0x22")).toBe("/yours?bad=0x22");
 });
 
 test("every inner page carries the breadcrumb back to the hub", () => {
   const t = dayByNumber(3)!;
   for (const h of [assetsPage(t), explorePage(t), traitsPage(t), yoursPage(t)]) {
     expect(h).toContain('class="mark syne hub" href="https://onenft.click"');
-    expect(h).toContain('href="/yours">Yours</a>');
+    expect(h).toContain('<nav class="crumb" aria-label="Breadcrumb"><ol>');
+    expect(h).toContain('aria-current="page"');
+    expect(h).toContain('href="/yours">Your wallet</a>');
+    expect(h).toContain('href="https://onenft.click">All collections</a>');
   }
 });

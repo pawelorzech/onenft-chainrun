@@ -5,11 +5,20 @@
 import { runnerFor, TRAIT_TYPES } from "./runners.ts";
 import { LAYERS, WEIGHTS } from "./layers.ts";
 import { dayByNumber, dateOf, type Day } from "./chain.ts";
-import type { ChainState } from "./contract.ts";
-import { SITE, isAuthor, opensea, explorer, type Names, NO_NAMES } from "./site.ts";
+import type { ChainState, ChainStatus } from "./contract.ts";
+import { SITE, isAuthor, opensea, explorer, dayState, type Names, NO_NAMES } from "./site.ts";
 import type { Address } from "viem";
 
-export function dayJson(d: Day, today: Day, chain: ChainState | null, names: Names = NO_NAMES) {
+/**
+ * How old the ownership data in an answer is. `known` false means no chain
+ * read ever succeeded, so every state below reads "unknown", never "gap".
+ */
+export function chainBlock(status: ChainStatus | null) {
+  if (!status?.configured) return { configured: false, known: false, stale: false, readAt: null, ageSeconds: null, error: null };
+  return { configured: true, known: status.known, stale: status.stale, readAt: status.readAt === null ? null : new Date(status.readAt).toISOString(), ageSeconds: status.ageSeconds, error: status.error };
+}
+
+export function dayJson(d: Day, today: Day, chain: ChainState | null, names: Names = NO_NAMES, status: ChainStatus | null = null) {
   const k = runnerFor(d.epoch);
   const owner = chain?.owners.get(d.n);
   const claim = chain?.claims.get(d.n);
@@ -25,7 +34,7 @@ export function dayJson(d: Day, today: Day, chain: ChainState | null, names: Nam
     colors: k.palette.colors,
     traits: k.traitMap,
     layers: k.layers.map((l) => ({ slot: l.slot, type: TRAIT_TYPES[l.slot], item: l.layer.item, name: l.layer.name })),
-    state: !chain ? null : owner ? (isAuthor(chain, owner) ? "author" : "taken") : d.n < today.n ? "gap" : "free",
+    state: stateWord(d.n, today.n, chain, status),
     owner: owner ?? null,
     ownerName: owner ? names.get(owner.toLowerCase()) ?? null : null,
     claim: claim ? { tx: claim.tx, block: Number(claim.block), at: claim.at, secondsAfterMidnight: claim.at - Number(d.startsAt), explorer: `${explorer(chain!.chainId)}/tx/${claim.tx}` } : null,
@@ -34,21 +43,55 @@ export function dayJson(d: Day, today: Day, chain: ChainState | null, names: Nam
     url: `https://${SITE}/day/${d.n}`,
     opensea: chain && owner ? opensea(chain, d.n) : null,
     bytes: k.svg.length,
+    chain: chainBlock(status),
   };
 }
 
-export function daysJson(today: Day, chain: ChainState | null, names: Names = NO_NAMES) {
-  const days = [];
-  for (let n = 1; n <= today.n; n++) {
-    const j = dayJson(dayByNumber(n)!, today, chain, names);
-    days.push({ day: j.day, date: j.date, renderer: j.renderer, traits: j.traits, state: j.state, owner: j.owner, ownerName: j.ownerName, tx: j.claim?.tx ?? null, image: j.image });
-  }
-  return { site: SITE, today: today.n, contract: chain ? { address: chain.address, chainId: chain.chainId, renderer: chain.renderer } : null, days };
+/** The API's word for a day's state. "taken" and "free" stay for readers of the first version; "unknown" is new and means the chain did not answer. */
+export function stateWord(n: number, today: number, chain: ChainState | null, status: ChainStatus | null): "author" | "taken" | "gap" | "free" | "unknown" | null {
+  if (!chain && !status?.configured) return null;
+  const s = dayState(n, today, chain, status);
+  return s === "claimed" ? "taken" : s === "available" ? "free" : s;
 }
 
-export function holderJson(who: Address, today: Day, chain: ChainState, names: Names = NO_NAMES) {
+export function daysJson(today: Day, chain: ChainState | null, names: Names = NO_NAMES, status: ChainStatus | null = null) {
+  const days = [];
+  for (let n = 1; n <= today.n; n++) {
+    const j = dayJson(dayByNumber(n)!, today, chain, names, status);
+    days.push({ day: j.day, date: j.date, renderer: j.renderer, traits: j.traits, state: j.state, owner: j.owner, ownerName: j.ownerName, tx: j.claim?.tx ?? null, image: j.image });
+  }
+  return { site: SITE, today: today.n, contract: chain ? { address: chain.address, chainId: chain.chainId, renderer: chain.renderer } : null, chain: chainBlock(status), days };
+}
+
+/** Counts over every day before today. Null when the chain never answered: an unknown count is not zero. */
+export function tallyOf(today: Day, chain: ChainState | null): { taken: number; gaps: number; author: number } | null {
+  if (!chain) return null;
+  let taken = 0, gaps = 0, author = 0;
+  for (let n = 1; n <= today.n; n++) {
+    const o = chain.owners.get(n);
+    if (o) { taken++; if (isAuthor(chain, o)) author++; }
+    else if (n < today.n) gaps++;
+  }
+  return { taken, gaps, author };
+}
+
+/** The short form for the hub: today, the counts and the palette in one small answer, instead of every day. */
+export function summaryJson(today: Day, chain: ChainState | null, status: ChainStatus | null = null) {
+  const k = runnerFor(today.epoch);
+  return {
+    site: SITE,
+    kind: "daily",
+    today: dayJson(today, today, chain, NO_NAMES, status),
+    tally: tallyOf(today, chain),
+    palette: k.palette,
+    contract: chain ? { address: chain.address, chainId: chain.chainId, renderer: chain.renderer } : null,
+    chain: chainBlock(status),
+  };
+}
+
+export function holderJson(who: Address, today: Day, chain: ChainState, names: Names = NO_NAMES, status: ChainStatus | null = null) {
   const mine = [...chain.owners].filter(([, o]) => o.toLowerCase() === who.toLowerCase()).map(([n]) => n).sort((a, b) => a - b);
-  return { address: who, name: names.get(who.toLowerCase()) ?? null, author: isAuthor(chain, who), days: mine.map((n) => dayJson(dayByNumber(n)!, today, chain, names)) };
+  return { address: who, name: names.get(who.toLowerCase()) ?? null, author: isAuthor(chain, who), chain: chainBlock(status), days: mine.map((n) => dayJson(dayByNumber(n)!, today, chain, names, status)) };
 }
 
 export function specJson() {
@@ -88,7 +131,7 @@ export function calendarIcs(dayOne: Day): string {
     "DURATION:PT15M",
     "RRULE:FREQ=DAILY",
     "SUMMARY:A new runner at chainrun.onenft.click",
-    `DESCRIPTION:The contract drew today's runner at midnight UTC. Claim it, free, gas only: https://${SITE}/`,
+    `DESCRIPTION:A new day, a new runner. Claim it before midnight UTC. 0 ETH mint fee, network gas only: https://${SITE}/`,
     `URL:https://${SITE}/`,
     "END:VEVENT",
     "END:VCALENDAR",

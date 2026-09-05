@@ -6,6 +6,7 @@ const st = (day: number, owners: number[] = []): ChainState => ({
   address: "0x1111111111111111111111111111111111111111", chainId: 8453, day, startEpoch: 20701n,
   author: "0xAAAA000000000000000000000000000000000001", rendererLocked: false, secondsLeft: 100,
   owners: new Map(owners.map((n) => [n, "0x2222222222222222222222222222222222222222" as const])),
+  readAt: Date.now(), renderer: "0x3333333333333333333333333333333333333333", claims: new Map(),
 });
 
 test("author days are every tenth up to 1000", () => {
