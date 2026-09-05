@@ -343,7 +343,7 @@ ${today.n === 1 ? `<p class="small">This is day one. Tomorrow a second row appea
 <section class="format">${swatches(k)}<p style="max-width:520px;margin:0">Every runner is 32 by 32 pixels, up to 13 layers composited with alpha. Today: a <strong>${esc(k.race)}</strong> on <strong>${esc(k.traitMap["Background"])}</strong>, ${k.layers.length} layers. <a href="/how">See how the machine works</a></p></section>
 ${rows.join("\n")}
 ${older}
-<footer><span>This is not an investment and never will be. Images are CC0, like the layers they come from. A sister of <a href="https://${PARENT}">${PARENT}</a>.</span><nav><a href="/explore">Explore</a><a href="/traits">Traits</a><a href="/assets">Assets</a>${chain ? `<a href="${openseaCollection(chain)}">OpenSea</a><a href="${explorer(chain.chainId)}/address/${chain.address}">Basescan</a>` : ""}<a href="/feed.xml">RSS</a><a href="/calendar.ics">Calendar</a><a href="${REPO}">Code</a></nav></footer>
+<footer><span>This is not an investment and never will be. Images are CC0, like the layers they come from. One of the daily collections at <a href="https://${PARENT}">${PARENT}</a>.</span><nav><a href="/explore">Explore</a><a href="/traits">Traits</a><a href="/assets">Assets</a>${chain ? `<a href="${openseaCollection(chain)}">OpenSea</a><a href="${explorer(chain.chainId)}/address/${chain.address}">Basescan</a>` : ""}<a href="/feed.xml">RSS</a><a href="/calendar.ics">Calendar</a><a href="${REPO}">Code</a></nav></footer>
 </main>
 </div>
 ${chain && !todayOwner && !authorDay ? mintScript(chain) : ""}
@@ -417,7 +417,7 @@ for slot in 0..12:
   wear layers[slot][item] if it exists and the mask, face accessory and hat rules allow
 pixel = blend(worn layers, top down)</code></pre>
 <p>Everything here is CC0, like the layers. If you build it, write to me. That is the one thing I am waiting for here.</p>
-<p class="small"><a href="/">Back to today</a>. The parent project, one Truchet knot a day: <a href="https://${PARENT}">${PARENT}</a>.</p>
+<p class="small"><a href="/">Back to today</a>. Every daily collection, including the knot: <a href="https://${PARENT}">${PARENT}</a>.</p>
 </main>`;
   return layout(`How it works | ${SITE}`, k.palette, body, "/today.png", "/how");
 }

@@ -1,6 +1,6 @@
 # chainrun.onenft.click
 
-One Chain Runner a day, drawn on chain from the clock of the Base chain. A sister project of onenft.click (`~/Programowanie/onenft`) and blit.onenft.click (`~/Programowanie/onenft-blit`), built from their code on 2026-09-05. Operational identifiers that should not be public live in `CLAUDE.local.md` (gitignored).
+One Chain Runner a day, drawn on chain from the clock of the Base chain. One of the daily collections listed at onenft.click (hub repo `~/Programowanie/onenft-hub`); the knot lives at knot.onenft.click (`~/Programowanie/onenft`) and blit.onenft.click (`~/Programowanie/onenft-blit`), built from their code on 2026-09-05. Operational identifiers that should not be public live in `CLAUDE.local.md` (gitignored).
 
 ## What this is
 
