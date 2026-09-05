@@ -1,8 +1,8 @@
 import { runnerFor } from "./runners.ts";
 import { nowSeconds, dayOfTime, dayByNumber, secondsToStart, setStartEpoch } from "./chain.ts";
 import { chainState, contractEnabled, startClaimScan, CONTRACT, CHAIN_ID } from "./contract.ts";
-import { homePage, dayPage, howPage, notFound, beforeStart, feedXml } from "./site.ts";
-import { explorePage, traitsPage, holderPage, assetsPage, embedPage, wordmarkSvg, PREVIEW_DAYS } from "./pages.ts";
+import { homePage, dayPage, howPage, notFound, beforeStart, feedXml, goTarget } from "./site.ts";
+import { explorePage, traitsPage, holderPage, yoursPage, assetsPage, embedPage, wordmarkSvg, PREVIEW_DAYS } from "./pages.ts";
 import { dayJson, daysJson, holderJson, specJson, calendarIcs } from "./api.ts";
 import { dayPng } from "./image.ts";
 import { ensNames, resolveHolder } from "./ens.ts";
@@ -25,7 +25,7 @@ const png = (b: Uint8Array, immutable: boolean) =>
   new Response(b, { headers: { "content-type": "image/png", "cache-control": immutable ? "public, max-age=31536000, immutable" : "public, max-age=300" } });
 const json = (o: unknown, maxAge = 30) =>
   new Response(JSON.stringify(o, null, 1), { headers: { "content-type": "application/json; charset=utf-8", "cache-control": `public, max-age=${maxAge}`, "access-control-allow-origin": "*" } });
-const redirect = (to: string) => new Response(null, { status: 301, headers: { location: to } });
+const redirect = (to: string, status = 301) => new Response(null, { status, headers: { location: to } });
 
 const LEGACY: Record<string, string> = {};
 
@@ -87,6 +87,8 @@ Bun.serve({
     if (path === "/explore") return html(explorePage(today, chain));
     if (path === "/traits") return html(traitsPage(today, chain));
     if (path === "/assets") return html(assetsPage(today, chain));
+    if (path === "/yours") return html(yoursPage(today, chain));
+    if (path === "/go") return redirect(goTarget(url.searchParams.get("who")), 302);
     if (path === "/embed") return html(embedPage(today, chain, await namesFor(chain)));
     if (path === "/wordmark.svg") return svg(wordmarkSvg(runnerFor(today.epoch)), false);
     if (path === "/api/today") return json(dayJson(today, today, chain, await namesFor(chain)));

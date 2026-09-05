@@ -6,7 +6,7 @@ import { runnerFor, renderDay, summary, SLOTS, TRAIT_TYPES, type Runner } from "
 import { WEIGHTS } from "./layers.ts";
 import { dayByNumber, dateOf, type Day } from "./chain.ts";
 import type { ChainState } from "./contract.ts";
-import { SITE, REPO, PARENT, RUNNERS, RUNNERS_RENDERER, layout, topBar, label, shortAddr, isAuthor, explorer, opensea, openseaCollection, chainName, num, plural, stripSize, esc, type Names, NO_NAMES } from "./site.ts";
+import { SITE, REPO, PARENT, RUNNERS, RUNNERS_RENDERER, layout, topBar, label, shortAddr, isAuthor, explorer, opensea, openseaCollection, chainName, num, plural, stripSize, esc, afterMidnight, traitList, whoBlock, sizePicker, downloadBar, connectScript, downloadScript, type Names, NO_NAMES } from "./site.ts";
 import type { Address } from "viem";
 
 const DOW = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -130,21 +130,49 @@ ${sections.join("\n")}
 
 // ---- holder ----
 
+/** The way in: connect a wallet or type an address, then land on that wallet's page. */
+export function yoursPage(today: Day, chain: ChainState | null = null): string {
+  const k = runnerFor(today.epoch);
+  const body = `<main class="wide">
+${topBar()}
+<div><h2 class="syne">Your days</h2><p class="lead" style="margin-top:8px">Connect a wallet or type an address, and this page lists every runner it holds, each one ready to save as SVG, PNG or JPEG.</p></div>
+${whoBlock(chain)}
+<p class="small">Nothing is sent anywhere. The wallet only tells this page which address to look up. The same list is on <a href="https://${PARENT}/wallet">${PARENT}</a> for every collection at once.</p>
+</main>
+${connectScript("/")}`;
+  return layout(`Your days | ${SITE}`, k.palette, body, `/day/${today.n}.png`, "/yours");
+}
+
 export function holderPage(who: Address, handle: string, today: Day, chain: ChainState, names: Names = NO_NAMES): string {
   const k = runnerFor(today.epoch);
   const mine = [...chain.owners].filter(([, o]) => o.toLowerCase() === who.toLowerCase()).map(([n]) => n).sort((a, b) => b - a);
   const name = label(who, names);
   const author = isAuthor(chain, who);
-  const cards = mine.map((n) => {
-    const kk = runnerFor(dayByNumber(n)!.epoch);
-    return `<a href="/day/${n}"><img src="/day/${n}.svg" alt="" loading="lazy"><div class="cap">day ${n}, ${esc(summary(kk))}</div></a>`;
+  const rows = mine.map((n) => {
+    const d = dayByNumber(n)!;
+    const kk = runnerFor(d.epoch);
+    const c = chain.claims.get(n);
+    const since = c ? `${dateOf(d.epoch)}, ${afterMidnight(c.at, d.startsAt)}` : dateOf(d.epoch);
+    const links = [c ? `<a href="${explorer(chain.chainId)}/tx/${c.tx}">Transaction</a>` : "", `<a href="${opensea(chain, n)}">OpenSea</a>`, `<a href="/day/${n}">Day page</a>`].filter(Boolean).join(", ");
+    return `<div class="tok" id="day-${n}">
+<a href="/day/${n}"><img src="/day/${n}.svg" width="256" height="256" alt="Day ${n}" loading="lazy"></a>
+<div class="meta">
+<div class="num syne">Day ${n}<span class="since">${since}</span></div>
+${traitList(kk)}
+<p class="small" style="margin:0">${links}.</p>
+${downloadBar(n, kk.palette.bg)}
+</div>
+</div>`;
   });
   const body = `<main class="wide">
 ${topBar()}
 <div><h2 class="syne">${esc(name)}</h2><p class="lead" style="margin-top:8px">${author ? "The author. Every tenth day up to day 1000 lands here." : `${mine.length} ${plural(mine.length, "day", "days")} of ${today.n}.`}${handle.toLowerCase() !== who.toLowerCase() ? ` <span class="small">${shortAddr(who)}</span>` : ""}</p></div>
-${cards.length ? `<div class="strip">${cards.join("")}</div>` : `<p>No days here yet. <a href="/">Today's runner</a> may still be free.</p>`}
-<nav class="nav small"><a href="${explorer(chain.chainId)}/address/${who}">Basescan</a><a href="${chain.chainId === 8453 ? `https://opensea.io/${who}` : `https://testnets.opensea.io/${who}`}">OpenSea</a><a href="/api/holder/${who}">JSON</a></nav>
-</main>`;
+${whoBlock(chain)}
+${rows.length ? `${sizePicker()}\n<div>${rows.join("\n")}</div>` : `<p>No days here yet. <a href="/">Today's runner</a> may still be free.</p>`}
+<nav class="nav small" style="padding-top:20px;border-top:1px solid var(--line)"><a href="${explorer(chain.chainId)}/address/${who}">Basescan</a><a href="${chain.chainId === 8453 ? `https://opensea.io/${who}` : `https://testnets.opensea.io/${who}`}">OpenSea</a><a href="/api/holder/${who}">JSON</a><a href="https://${PARENT}/wallet/${who}">All your days on ${PARENT}</a></nav>
+</main>
+${connectScript("/")}
+${rows.length ? downloadScript() : ""}`;
   return layout(`${name} | ${SITE}`, k.palette, body, `/day/${today.n}.png`, `/${handle}`);
 }
 

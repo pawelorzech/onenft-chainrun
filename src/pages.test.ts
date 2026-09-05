@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
-import { explorePage, traitsPage, holderPage, assetsPage, embedPage, PREVIEW_DAYS } from "./pages.ts";
+import { explorePage, traitsPage, holderPage, yoursPage, assetsPage, embedPage, PREVIEW_DAYS } from "./pages.ts";
+import { goTarget } from "./site.ts";
 import { dayJson, daysJson, specJson, calendarIcs } from "./api.ts";
 import { dayByNumber } from "./chain.ts";
 import type { ChainState } from "./contract.ts";
@@ -99,4 +100,50 @@ test("calendar is one daily event from day 1", () => {
   expect(ics).toContain("DTSTART:20260905T000000Z");
   expect(ics).toContain("RRULE:FREQ=DAILY");
   expect(ics.split("\r\n")[0]).toBe("BEGIN:VCALENDAR");
+});
+
+test("holder page: one row per day with a download bar, the size picker once, the way to the hub", () => {
+  const t = dayByNumber(5)!;
+  const h = holderPage(A, "0x2222…", t, fakeChain(5, { 1: A, 2: "0x4444444444444444444444444444444444444444", 4: A }));
+  expect((h.match(/class="tok"/g) ?? []).length).toBe(2);
+  expect((h.match(/data-dl="png"/g) ?? []).length).toBe(2);
+  expect((h.match(/data-dl="jpeg"/g) ?? []).length).toBe(2);
+  expect(h).toContain('download="chainrun-day-1.svg"');
+  expect((h.match(/class="sizes"/g) ?? []).length).toBe(1);
+  expect(h).toContain("18 min after midnight UTC");
+  expect(h).toContain("https://onenft.click/wallet/" + A);
+  expect(h).toContain('id="connect"');
+  expect(h).not.toContain("data-dl=\"png\" data-day=\"2\"");
+});
+
+test("holder page with no days has no download script and says so", () => {
+  const t = dayByNumber(5)!;
+  const h = holderPage(A, A, t, fakeChain(5, {}));
+  expect(h).toContain("No days here yet");
+  expect(h).not.toContain("onenft_size");
+});
+
+test("yours page: connect button only when the chain answers, the form always", () => {
+  const t = dayByNumber(5)!;
+  expect(yoursPage(t, fakeChain(5, {}))).toContain('id="connect"');
+  expect(yoursPage(t, null)).not.toContain('id="connect"');
+  expect(yoursPage(t, null)).toContain('action="/go"');
+  expect(yoursPage(t, null)).toContain("The chain did not answer");
+});
+
+test("/go accepts an address or an ENS name and bounces the rest", () => {
+  expect(goTarget("0x2222222222222222222222222222222222222222")).toBe("/0x2222222222222222222222222222222222222222");
+  expect(goTarget(" pawelorzech.eth ")).toBe("/pawelorzech.eth");
+  expect(goTarget("sub.name.eth", "/wallet/")).toBe("/wallet/sub.name.eth");
+  expect(goTarget("junk")).toBe("/yours");
+  expect(goTarget(null)).toBe("/yours");
+  expect(goTarget("0x22")).toBe("/yours");
+});
+
+test("every inner page carries the breadcrumb back to the hub", () => {
+  const t = dayByNumber(3)!;
+  for (const h of [assetsPage(t), explorePage(t), traitsPage(t), yoursPage(t)]) {
+    expect(h).toContain('class="mark syne hub" href="https://onenft.click"');
+    expect(h).toContain('href="/yours">Yours</a>');
+  }
 });

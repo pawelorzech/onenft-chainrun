@@ -131,6 +131,31 @@ table.tr td.n{text-align:right;font-family:"Syne",system-ui,sans-serif;font-weig
 .traits dd{margin:0}
 .share{display:flex;gap:16px;flex-wrap:wrap;font-size:15px}
 pre.snip{margin:0;padding:14px;background:var(--soft);overflow-x:auto;font-size:13px;line-height:1.5;font-family:ui-monospace,Menlo,monospace}
+.crumb{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.crumb .hub{color:var(--muted)}
+.crumb .sep{color:var(--line);font-weight:800;font-size:20px}
+aside .crumb{flex-direction:column;gap:2px}
+aside .crumb .sep{display:none}
+aside .crumb .hub{font-size:15px;font-weight:700}
+.whobox{display:flex;flex-direction:column;gap:8px}
+.who{display:flex;gap:12px;flex-wrap:wrap;max-width:720px}
+.who form{display:flex;gap:12px;flex:1;min-width:280px}
+.who .cta{height:50px;padding:0 22px;font-size:17px;width:auto}
+.field{height:50px;padding:0 16px;border:1px solid var(--line);background:transparent;color:var(--fg);flex:1;min-width:0;font-family:ui-monospace,Menlo,monospace;font-size:15px}
+.field::placeholder{color:var(--muted)}
+.tok{display:grid;grid-template-columns:256px minmax(0,1fr);gap:32px;padding:30px 0;border-top:1px solid var(--line)}
+.tok img{width:256px;height:256px;display:block;box-shadow:0 0 0 1px var(--line)}
+.tok .meta{display:flex;flex-direction:column;gap:14px}
+.tok .num{font-size:44px}
+.tok .since{font-size:14px;font-weight:400;color:var(--muted);letter-spacing:0;margin-left:10px;font-family:"Newsreader",Georgia,serif}
+.dl{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:auto;padding-top:14px;border-top:1px solid var(--line)}
+.dl .lab{color:var(--muted);font-size:15px;margin-right:6px}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border:1px solid var(--fg);color:var(--fg);text-decoration:none;font-weight:700;font-size:15px;font-family:"Syne",system-ui,sans-serif;background:transparent;cursor:pointer}
+.sizes{display:flex;border:1px solid var(--line)}
+.sizes button{padding:0 12px;height:40px;display:flex;align-items:center;font-size:14px;color:var(--muted);border:0;border-right:1px solid var(--line);background:transparent;font-family:"Syne",system-ui,sans-serif;cursor:pointer}
+.sizes button:last-child{border-right:0}
+.sizes button[aria-pressed="true"]{background:var(--soft);color:var(--fg);font-weight:700}
+.tok img{image-rendering:pixelated}
 @media (max-width:1180px){
  .today{grid-template-columns:1fr}
  .today .knot{max-width:460px}
@@ -149,6 +174,9 @@ pre.snip{margin:0;padding:14px;background:var(--soft);overflow-x:auto;font-size:
  .format{flex-direction:column;align-items:flex-start;padding:20px}
  footer,.prose,.single,.wide{padding:20px}
  .cal a span{font-size:11px}
+ .tok{grid-template-columns:1fr;gap:16px}
+ .tok img{width:100%;height:auto}
+ .who form{min-width:0;width:100%}
 }
 @media (prefers-reduced-motion:no-preference){.row{transition:background .15s}}
 `;
@@ -215,9 +243,98 @@ export function traitList(k: Runner): string {
   return `<dl class="traits">${rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join("")}</dl>`;
 }
 
-/** Top bar for the inner pages: the mark and the site nav. */
+/** The mark as a breadcrumb: the hub first, then this site. Every page carries the way back. */
+export function crumb(): string {
+  return `<div class="crumb"><a class="mark syne hub" href="https://${PARENT}">${PARENT}</a><span class="sep syne">/</span><a class="mark syne" href="/">${SITE}</a></div>`;
+}
+
+/** Top bar for the inner pages: the breadcrumb and the site nav. */
 export function topBar(): string {
-  return `<div class="top"><a class="mark syne" href="/">${SITE}</a><nav><a href="/explore">Explore</a><a href="/traits">Traits</a><a href="/assets">Assets</a><a href="/how">How it works</a></nav></div>`;
+  return `<div class="top">${crumb()}<nav><a href="/explore">Explore</a><a href="/traits">Traits</a><a href="/assets">Assets</a><a href="/how">How it works</a><a href="/yours">Yours</a></nav></div>`;
+}
+
+/** Pixel art wants hard edges when the browser rasterizes it. */
+export const PIXEL = true;
+/** Prefix of every downloaded file name. */
+export const FILE_PREFIX = "chainrun";
+export const SIZES = [1024, 2048, 4096];
+
+/** Connect a wallet or type an address. The form works without JavaScript through /go. */
+export function whoBlock(chain: ChainState | null): string {
+  return `<div class="whobox"><div class="who">${chain ? `<button class="cta syne" id="connect" type="button">Connect wallet</button>` : ""}<form action="/go" method="get"><input class="field" name="who" placeholder="0x… or name.eth" autocomplete="off" spellcheck="false" aria-label="Wallet address or ENS name" required><button class="cta ghost syne" type="submit">Show</button></form></div>
+<p class="msg" id="msg" aria-live="polite">${chain ? "" : "The chain did not answer. Try again in a minute."}</p>
+<p class="small" id="last" hidden>Last time here: <a href="/">…</a>.</p></div>`;
+}
+
+/** The size picker for PNG and JPEG. One per page; the choice is kept in the browser. */
+export function sizePicker(): string {
+  return `<div class="dl" style="border:0;padding:0;margin:0"><span class="lab">PNG and JPEG size</span><div class="sizes" role="group" aria-label="Image size">${SIZES.map((s) => `<button type="button" data-size="${s}" aria-pressed="${s === 2048}">${s}</button>`).join("")}</div></div>`;
+}
+
+/** The download bar under one token. SVG is the file itself; PNG and JPEG are drawn in the browser and fall back to the card without JavaScript. */
+export function downloadBar(n: number, bg: string): string {
+  const d = `data-day="${n}" data-src="/day/${n}.svg" data-bg="${bg}"`;
+  return `<div class="dl"><span class="lab">Download</span><a class="btn" href="/day/${n}.svg" download="${FILE_PREFIX}-day-${n}.svg">SVG</a><a class="btn" href="/day/${n}.png" data-dl="png" ${d}>PNG</a><a class="btn" href="/day/${n}.png" data-dl="jpeg" ${d}>JPEG</a></div>`;
+}
+
+/**
+ * Connect button: asks the wallet for an account and opens that wallet's page.
+ * `base` is the path the address is appended to ("/" here, "/wallet/" on the hub).
+ * Also fills the "last time here" link from the browser's memory.
+ */
+export function connectScript(base = "/"): string {
+  return `<script>
+(function(){
+var BASE=${JSON.stringify(base)};var KEY='onenft_who';var btn=document.getElementById('connect');var out=document.getElementById('msg');var last=document.getElementById('last');
+function say(t){if(out)out.textContent=t}
+var who=null;try{who=localStorage.getItem(KEY)}catch(e){}
+if(last&&who&&/^0x[0-9a-fA-F]{40}$/.test(who)&&location.pathname.toLowerCase()!==(BASE+who).toLowerCase()){var a=last.querySelector('a');a.href=BASE+who;a.textContent=who.slice(0,6)+'\\u2026'+who.slice(-4);last.hidden=false}
+if(!btn)return;var eth=window.ethereum;
+if(!eth||!eth.request){btn.disabled=true;btn.textContent='No wallet in this browser';return}
+btn.addEventListener('click',async function(){btn.disabled=true;
+  try{var accs=await eth.request({method:'eth_requestAccounts'});if(!accs||!accs.length)throw new Error('the wallet gave no account');var acc=accs[0];try{localStorage.setItem(KEY,acc)}catch(e){}location.href=BASE+acc}
+  catch(e){say(e&&e.code===4001?'Cancelled in the wallet.':'Failed: '+((e&&e.message)||e));btn.disabled=false}});
+})();
+</script>`;
+}
+
+/**
+ * Downloads drawn in the browser. Fetches the SVG, sets its size to the pick,
+ * draws it on a canvas and saves PNG or JPEG. JPEG has no alpha, so it gets the
+ * day's background first. Pixel art turns smoothing off. data-dl="svg" saves the
+ * fetched file as is, for pages on another origin than the image.
+ */
+export function downloadScript(prefix = FILE_PREFIX, pixel = PIXEL): string {
+  return `<script>
+(function(){
+var PREFIX=${JSON.stringify(prefix)};var PIXEL=${pixel ? "true" : "false"};var KEY='onenft_size';var SIZES=${JSON.stringify(SIZES)};
+var size=2048;try{var s=+localStorage.getItem(KEY);if(SIZES.indexOf(s)>=0)size=s}catch(e){}
+var out=document.getElementById('msg');function say(t){if(out)out.textContent=t}
+var picks=document.querySelectorAll('.sizes button');
+function paint(){picks.forEach(function(b){b.setAttribute('aria-pressed',String(+b.getAttribute('data-size')===size))})}
+picks.forEach(function(b){b.addEventListener('click',function(){size=+b.getAttribute('data-size');try{localStorage.setItem(KEY,String(size))}catch(e){}paint()})});paint();
+function save(blob,name){var a=document.createElement('a');var u=URL.createObjectURL(blob);a.href=u;a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);a.remove()},2000)}
+document.querySelectorAll('[data-dl]').forEach(function(el){el.addEventListener('click',async function(ev){
+  ev.preventDefault();var kind=el.getAttribute('data-dl');var n=el.getAttribute('data-day');var prefix=el.getAttribute('data-prefix')||PREFIX;
+  var pixel=el.hasAttribute('data-pixel')?el.getAttribute('data-pixel')==='1':PIXEL;var bg=el.getAttribute('data-bg')||'#000000';
+  var was=el.textContent;el.textContent='\\u2026';say('');
+  try{
+    var res=await fetch(el.getAttribute('data-src'));if(!res.ok)throw new Error('the image answered '+res.status);var text=await res.text();
+    if(kind==='svg'){save(new Blob([text],{type:'image/svg+xml'}),prefix+'-day-'+n+'.svg');return}
+    text=text.replace(/ width="\\d+" height="\\d+"/,' width="'+size+'" height="'+size+'"');
+    var u=URL.createObjectURL(new Blob([text],{type:'image/svg+xml'}));var img=new Image();
+    try{await new Promise(function(ok,no){img.onload=ok;img.onerror=function(){no(new Error('the browser could not draw the image'))};img.src=u})}finally{setTimeout(function(){URL.revokeObjectURL(u)},0)}
+    var c=document.createElement('canvas');c.width=size;c.height=size;var ctx=c.getContext('2d');ctx.imageSmoothingEnabled=!pixel;
+    if(kind==='jpeg'){ctx.fillStyle=bg;ctx.fillRect(0,0,size,size)}
+    ctx.drawImage(img,0,0,size,size);
+    var blob=await new Promise(function(ok){c.toBlob(ok,kind==='jpeg'?'image/jpeg':'image/png',0.92)});
+    if(!blob)throw new Error('the browser gave no file');
+    save(blob,prefix+'-day-'+n+'-'+size+(kind==='jpeg'?'.jpg':'.png'));
+  }catch(e){say('Download failed: '+((e&&e.message)||e))}
+  finally{el.textContent=was}
+})});
+})();
+</script>`;
 }
 
 /** "4 min after midnight UTC" for a claim block time. */
@@ -317,7 +434,7 @@ export function homePage(today: Day, now: bigint, chain: ChainState | null = nul
 
   const body = `<div class="page">
 <aside><div class="stick">
-<a class="mark syne" href="/">${SITE}</a>
+${crumb()}
 <h1 class="syne">One<br>runner<br>a day</h1>
 <p class="lead">Every day at midnight UTC the contract draws one Chain Runner from the day number: 338 layers in 13 slots, the weight tables and rules of the 2021 Ethereum original, released CC0. Nobody picks the traits. The clock does.</p>
 <hr>
@@ -326,7 +443,7 @@ ${chain ? `<div style="display:flex;gap:34px"><div><div class="syne" style="font
 <div style="display:flex;flex-direction:column;gap:12px">
 ${cta}
 </div>
-<nav class="nav small"><a href="/explore">Explore</a><a href="/traits">Traits</a><a href="/assets">Assets</a><a href="/feed.xml">RSS</a></nav>
+<nav class="nav small"><a href="/explore">Explore</a><a href="/traits">Traits</a><a href="/assets">Assets</a><a href="/yours">Yours</a><a href="/feed.xml">RSS</a></nav>
 </div></aside>
 <main>
 <section class="today">
@@ -343,7 +460,7 @@ ${today.n === 1 ? `<p class="small">This is day one. Tomorrow a second row appea
 <section class="format">${swatches(k)}<p style="max-width:520px;margin:0">Every runner is 32 by 32 pixels, up to 13 layers composited with alpha. Today: a <strong>${esc(k.race)}</strong> on <strong>${esc(k.traitMap["Background"])}</strong>, ${k.layers.length} layers. <a href="/how">See how the machine works</a></p></section>
 ${rows.join("\n")}
 ${older}
-<footer><span>This is not an investment and never will be. Images are CC0, like the layers they come from. One of the daily collections at <a href="https://${PARENT}">${PARENT}</a>.</span><nav><a href="/explore">Explore</a><a href="/traits">Traits</a><a href="/assets">Assets</a>${chain ? `<a href="${openseaCollection(chain)}">OpenSea</a><a href="${explorer(chain.chainId)}/address/${chain.address}">Basescan</a>` : ""}<a href="/feed.xml">RSS</a><a href="/calendar.ics">Calendar</a><a href="${REPO}">Code</a></nav></footer>
+<footer><span>This is not an investment and never will be. Images are CC0, like the layers they come from. One of the daily collections at <a href="https://${PARENT}">${PARENT}</a>.</span><nav><a href="/explore">Explore</a><a href="/traits">Traits</a><a href="/assets">Assets</a><a href="/yours">Yours</a><a href="https://${PARENT}">All collections</a>${chain ? `<a href="${openseaCollection(chain)}">OpenSea</a><a href="${explorer(chain.chainId)}/address/${chain.address}">Basescan</a>` : ""}<a href="/feed.xml">RSS</a><a href="/calendar.ics">Calendar</a><a href="${REPO}">Code</a></nav></footer>
 </main>
 </div>
 ${chain && !todayOwner && !authorDay ? mintScript(chain) : ""}
@@ -453,4 +570,11 @@ export function feedXml(today: Day, chain: ChainState | null): string {
 <rss version="2.0"><channel><title>chainrun.onenft.click</title><link>https://${SITE}/</link><description>One Chain Runner a day, drawn on chain from the clock of the Base chain.</description><language>en</language>
 ${items.join("\n")}
 </channel></rss>`;
+}
+
+/** Where /go?who=... sends a typed address or ENS name. Anything else goes back to the form. */
+export function goTarget(who: string | null, base = "/", back = "/yours"): string {
+  const w = (who ?? "").trim();
+  if (/^0x[0-9a-fA-F]{40}$/.test(w) || /^[a-z0-9-]+(?:\.[a-z0-9-]+)*\.eth$/i.test(w)) return base + w;
+  return back;
 }
