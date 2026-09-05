@@ -282,24 +282,34 @@ const FONTS = `<link rel="preconnect" href="https://fonts.googleapis.com"><link 
 const DESC = "One Chain Runner a day, drawn on chain from the clock of the Base chain with the CC0 Chain Runners layers.";
 const OG_DESC = "One Chain Runner a day, drawn on chain from the clock of the Base chain.";
 
-export function layout(title: string, p: Palette, body: string, image = "/today.png", path = "/"): string {
+export function layout(title: string, p: Palette, body: string, image = "/today.png", path = "/", description?: string): string {
+  const alt = title.replace(/ \| .*$/, "") + " on " + SITE;
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
-<meta name="description" content="${DESC}">
+<meta name="description" content="${esc(description ?? DESC)}">
 <meta name="theme-color" content="${p.bg}">
 <link rel="icon" href="/today.svg" type="image/svg+xml">
 <link rel="alternate" type="application/rss+xml" title="chainrun.onenft.click, one runner a day" href="/feed.xml">
 <link rel="canonical" href="https://${SITE}${esc(path)}">
 <meta property="og:title" content="${esc(title)}">
-<meta property="og:description" content="${OG_DESC}">
+<meta property="og:description" content="${esc(description ?? OG_DESC)}">
 <meta property="og:image" content="https://${SITE}${esc(image)}">
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta property="og:url" content="https://${SITE}${esc(path)}">
 <meta name="twitter:card" content="summary_large_image">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="${SITE}">
+<meta property="og:locale" content="en_US">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="${esc(alt)}">
+<meta name="twitter:title" content="${esc(title)}">
+<meta name="twitter:description" content="${esc(description ?? OG_DESC)}">
+<meta name="twitter:image" content="https://${SITE}${esc(image)}">
+<meta name="twitter:image:alt" content="${esc(alt)}">
 ${FONTS}
 ${ANALYTICS}
 <style>${css(p)}</style>
@@ -711,7 +721,7 @@ ${traitList(k)}
 ${share}
 <details><summary class="small">Put this runner on your page</summary><pre class="snip">${snippet}</pre><p class="small">CC0. No credit needed.</p></details>
 </main>`;
-  return layout(`Day ${d.n} | ${SITE}`, k.palette, body, `/day/${d.n}.png`, `/day/${d.n}`);
+  return layout(`Day ${d.n} | ${SITE}`, k.palette, body, `/day/${d.n}.png`, `/day/${d.n}`, `Day ${d.n} of ${SITE}, ${dateOf(d.epoch)} UTC: ${summary(k)}. ${STATE_TEXT[st]}.`);
 }
 
 export function esc(t: string): string {

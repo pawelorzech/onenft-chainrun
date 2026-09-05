@@ -178,7 +178,7 @@ ${rows.length ? `${sizePicker()}\n<div>${rows.join("\n")}</div>` : `<p>No days h
 </main>
 ${connectScript("/")}
 ${rows.length ? downloadScript() : ""}`;
-  return layout(`${rawName} | ${SITE}`, k.palette, body, `/day/${today.n}.png`, `/${handle}`);
+  return layout(`${rawName} | ${SITE}`, k.palette, body, `/day/${today.n}.png`, `/${handle}`, `${mine.length} ${plural(mine.length, "day", "days")} of ${SITE} held by ${rawName}.`);
 }
 
 // ---- assets ----
