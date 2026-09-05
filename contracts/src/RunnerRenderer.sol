@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
+import {Base64} from "./lib/Base64.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {IDayRenderer} from "./IDayRenderer.sol";
 import {DataStore} from "./DataStore.sol";
@@ -165,7 +165,6 @@ contract RunnerRenderer is IDayRenderer {
     // ---- pixels ----
 
     uint256 internal constant HAS = 1 << 24;
-    bytes16 private constant HEX = "0123456789abcdef";
 
     /// @notice Composite the worn layers bottom to top into 1024 pixels, each
     /// `HAS | rgb` once any layer painted it. Same result as the original's
@@ -216,71 +215,59 @@ contract RunnerRenderer is IDayRenderer {
         }
     }
 
-    // ---- a writer that never reallocates ----
-    // Building the SVG with repeated abi.encodePacked leaves every intermediate
-    // copy in memory; with a thousand rects that is over a megabyte and the
-    // quadratic memory cost dominates. One 64 kB buffer and a cursor instead.
-
-    function put(bytes memory buf, uint256 n, bytes memory s) internal pure returns (uint256) {
-        assembly {
-            let len := mload(s)
-            let src := add(s, 32)
-            let dst := add(add(buf, 32), n)
-            for { let i := 0 } lt(i, len) { i := add(i, 32) } { mstore(add(dst, i), mload(add(src, i))) }
-            n := add(n, len)
-        }
-        return n;
-    }
-
-    function putByte(bytes memory buf, uint256 n, bytes1 b) internal pure returns (uint256) {
-        buf[n] = b;
-        return n + 1;
-    }
-
-    /// @dev 0..32 as decimal.
-    function putNum(bytes memory buf, uint256 n, uint256 v) internal pure returns (uint256) {
-        if (v >= 10) n = putByte(buf, n, bytes1(uint8(48 + v / 10)));
-        return putByte(buf, n, bytes1(uint8(48 + (v % 10))));
-    }
-
-    function putHex(bytes memory buf, uint256 n, uint256 rgb) internal pure returns (uint256) {
-        n = putByte(buf, n, "#");
-        for (uint256 k = 0; k < 3; k++) {
-            uint256 v = (rgb >> (16 - 8 * k)) & 0xff;
-            n = putByte(buf, n, HEX[v >> 4]);
-            n = putByte(buf, n, HEX[v & 15]);
-        }
-        return n;
-    }
-
-    /// @notice One rect per horizontal run of one color.
-    function svgOf(Worn[] memory worn, uint256 count) public pure returns (string memory) {
+    /// @notice One rect per horizontal run of one color. Written in Yul into one
+    /// 64 kB buffer: no bounds checks, no intermediate copies. Worst case 1024
+    /// rects of about 56 bytes, well inside the buffer.
+    function svgOf(Worn[] memory worn, uint256 count) public pure returns (string memory out) {
         uint256[1024] memory px = compose(worn, count);
-        bytes memory buf = new bytes(65536);
-        uint256 n = put(buf, 0, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="512" height="512" shape-rendering="crispEdges">');
-        for (uint256 y = 0; y < 32; y++) {
-            uint256 x = 0;
-            while (x < 32) {
-                uint256 p = y * 32 + x;
-                uint256 w = 1;
-                while (x + w < 32 && px[p + w] == px[p]) w++;
-                n = put(buf, n, '<rect x="');
-                n = putNum(buf, n, x);
-                n = put(buf, n, '" y="');
-                n = putNum(buf, n, y);
-                n = put(buf, n, '" width="');
-                n = putNum(buf, n, w);
-                n = put(buf, n, '" height="1" fill="');
-                n = putHex(buf, n, px[p] & 0xffffff);
-                n = put(buf, n, '"/>');
-                x += w;
-            }
-        }
-        n = put(buf, n, "</svg>");
+        out = new string(65536);
         assembly {
-            mstore(buf, n)
+            let dst := add(out, 32)
+            let hexTable := "0123456789abcdef"
+            function num(d, n, v) -> n2 {
+                if gt(v, 9) {
+                    mstore8(add(d, n), add(48, div(v, 10)))
+                    n := add(n, 1)
+                }
+                mstore8(add(d, n), add(48, mod(v, 10)))
+                n2 := add(n, 1)
+            }
+            function hex7(d, n, rgb, t) -> n2 {
+                mstore8(add(d, n), 0x23)
+                for { let k := 0 } lt(k, 3) { k := add(k, 1) } {
+                    let v := and(shr(sub(16, mul(8, k)), rgb), 0xff)
+                    mstore8(add(d, add(n, add(1, mul(2, k)))), byte(shr(4, v), t))
+                    mstore8(add(d, add(n, add(2, mul(2, k)))), byte(and(v, 15), t))
+                }
+                n2 := add(n, 7)
+            }
+            let n := 0
+            mstore(add(dst, n), "<svg xmlns=\"http://www.w3.org/20") n := add(n, 32)
+            mstore(add(dst, n), "00/svg\" viewBox=\"0 0 32 32\" widt") n := add(n, 32)
+            mstore(add(dst, n), "h=\"512\" height=\"512\" shape-rende") n := add(n, 32)
+            mstore(add(dst, n), "ring=\"crispEdges\">") n := add(n, 18)
+            for { let y := 0 } lt(y, 32) { y := add(y, 1) } {
+                let x := 0
+                for {} lt(x, 32) {} {
+                    let p := add(mul(y, 32), x)
+                    let c := mload(add(px, mul(p, 32)))
+                    let w := 1
+                    for {} and(lt(add(x, w), 32), eq(mload(add(px, mul(add(p, w), 32))), c)) {} { w := add(w, 1) }
+                    mstore(add(dst, n), "<rect x=\"") n := add(n, 9)
+                    n := num(dst, n, x)
+                    mstore(add(dst, n), "\" y=\"") n := add(n, 5)
+                    n := num(dst, n, y)
+                    mstore(add(dst, n), "\" width=\"") n := add(n, 9)
+                    n := num(dst, n, w)
+                    mstore(add(dst, n), "\" height=\"1\" fill=\"") n := add(n, 19)
+                    n := hex7(dst, n, and(c, 0xffffff), hexTable)
+                    mstore(add(dst, n), "\"/>") n := add(n, 3)
+                    x := add(x, w)
+                }
+            }
+            mstore(add(dst, n), "</svg>") n := add(n, 6)
+            mstore(out, n)
         }
-        return string(buf);
     }
 
     // ---- IDayRenderer ----
