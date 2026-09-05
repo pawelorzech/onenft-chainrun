@@ -6,7 +6,7 @@ import { runnerFor, renderDay, summary, SLOTS, TRAIT_TYPES, type Runner } from "
 import { WEIGHTS } from "./layers.ts";
 import { dayByNumber, dateOf, type Day } from "./chain.ts";
 import type { ChainState } from "./contract.ts";
-import { SITE, REPO, PARENT, RUNNERS, RUNNERS_RENDERER, layout, topBar, label, shortAddr, isAuthor, explorer, opensea, openseaCollection, chainName, num, plural, stripSize, esc, afterMidnight, traitList, whoBlock, sizePicker, downloadBar, connectScript, downloadScript, type Names, NO_NAMES } from "./site.ts";
+import { SITE, REPO, PARENT, RUNNERS, RUNNERS_RENDERER, layout, topBar, label, shortAddr, isAuthor, explorer, opensea, openseaCollection, chainName, num, plural, stripSize, esc, afterMidnight, traitList, whoBlock, sizePicker, downloadBar, connectScript, downloadScript, nameHeading, type Names, NO_NAMES } from "./site.ts";
 import type { Address } from "viem";
 
 const DOW = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -139,7 +139,7 @@ ${topBar()}
 ${whoBlock(chain)}
 <p class="small">Nothing is sent anywhere. The wallet only tells this page which address to look up. The same list is on <a href="https://${PARENT}/wallet">${PARENT}</a> for every collection at once.</p>
 </main>
-${connectScript("/")}`;
+${connectScript("/", true)}`;
   return layout(`Your days | ${SITE}`, k.palette, body, `/day/${today.n}.png`, "/yours");
 }
 
@@ -166,7 +166,7 @@ ${downloadBar(n, kk.palette.bg)}
   });
   const body = `<main class="wide">
 ${topBar()}
-<div><h2 class="syne">${esc(name)}</h2><p class="lead" style="margin-top:8px">${author ? "The author. Every tenth day up to day 1000 lands here." : `${mine.length} ${plural(mine.length, "day", "days")} of ${today.n}.`}${handle.toLowerCase() !== who.toLowerCase() ? ` <span class="small">${shortAddr(who)}</span>` : ""}</p></div>
+<div><h2 class="syne">${nameHeading(name)}</h2><p class="lead" style="margin-top:8px">${author ? "The author. Every tenth day up to day 1000 lands here." : `${mine.length} ${plural(mine.length, "day", "days")} of ${today.n}.`}${handle.toLowerCase() !== who.toLowerCase() ? ` <span class="small">${shortAddr(who)}</span>` : ""}</p></div>
 ${whoBlock(chain)}
 ${rows.length ? `${sizePicker()}\n<div>${rows.join("\n")}</div>` : `<p>No days here yet. <a href="/">Today's runner</a> may still be free.</p>`}
 <nav class="nav small" style="padding-top:20px;border-top:1px solid var(--line)"><a href="${explorer(chain.chainId)}/address/${who}">Basescan</a><a href="${chain.chainId === 8453 ? `https://opensea.io/${who}` : `https://testnets.opensea.io/${who}`}">OpenSea</a><a href="/api/holder/${who}">JSON</a><a href="https://${PARENT}/wallet/${who}">All your days on ${PARENT}</a></nav>

@@ -76,6 +76,8 @@ async function ownersUpTo(day: number): Promise<Map<number, Address>> {
     });
     res.forEach((r, i) => {
       if (r.status === "success") owners.set(from + i, r.result as Address);
+      // A revert means the token does not exist (a gap). Anything else is the RPC failing, and a failing RPC must not turn every day into a gap.
+      else if (!/revert/i.test(r.error?.message ?? "")) throw new Error(`ownerOf(${from + i}) failed: ${(r.error as any)?.shortMessage ?? r.error?.message}`);
     });
   }
   if (!fresh) {
@@ -86,10 +88,26 @@ async function ownersUpTo(day: number): Promise<Map<number, Address>> {
   return owners;
 }
 
+/** The last state that read cleanly. Served when the RPC fails, so a flaky RPC never blanks the page or the holder lists. */
+let lastGood: ChainState | null = null;
+
 export async function chainState(): Promise<ChainState | null> {
   if (!client || !CONTRACT) return null;
   if (cache && Date.now() - cache.at < TTL_MS) return cache.state;
-  const c = { address: CONTRACT, abi: ABI } as const;
+  try {
+    const state = await readChainState();
+    lastGood = state;
+    return state;
+  } catch (e) {
+    if (!lastGood) throw e;
+    console.error("chain read failed, serving the last good state:", (e as Error).message);
+    cache = { at: Date.now(), state: lastGood };
+    return lastGood;
+  }
+}
+
+async function readChainState(): Promise<ChainState> {
+  const c = { address: CONTRACT as Address, abi: ABI } as const;
   const [dayBn, startEpoch, author, renderer, rendererLocked, secondsLeftBn] = await client.multicall({
     contracts: [
       { ...c, functionName: "currentDay" },

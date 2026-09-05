@@ -138,6 +138,7 @@ aside .crumb{flex-direction:column;gap:2px}
 aside .crumb .sep{display:none}
 aside .crumb .hub{font-size:15px;font-weight:700}
 .whobox{display:flex;flex-direction:column;gap:8px}
+.wname{overflow-wrap:normal;word-break:keep-all}
 .who{display:flex;gap:12px;flex-wrap:wrap;max-width:720px}
 .who form{display:flex;gap:12px;flex:1;min-width:280px}
 .who .cta{height:50px;padding:0 22px;font-size:17px;width:auto}
@@ -280,19 +281,25 @@ export function downloadBar(n: number, bg: string): string {
 /**
  * Connect button: asks the wallet for an account and opens that wallet's page.
  * `base` is the path the address is appended to ("/" here, "/wallet/" on the hub).
- * Also fills the "last time here" link from the browser's memory.
+ * A wallet that already granted this site an account (eth_accounts, no prompt) is
+ * recognized on load: the entry page goes straight to it, other pages show the
+ * link. The last address is also kept in the browser for the "last time" link.
  */
-export function connectScript(base = "/"): string {
+export function connectScript(base = "/", entry = false): string {
   return `<script>
 (function(){
-var BASE=${JSON.stringify(base)};var KEY='onenft_who';var btn=document.getElementById('connect');var out=document.getElementById('msg');var last=document.getElementById('last');
+var BASE=${JSON.stringify(base)};var ENTRY=${entry ? "true" : "false"};var KEY='onenft_who';var btn=document.getElementById('connect');var out=document.getElementById('msg');var last=document.getElementById('last');
 function say(t){if(out)out.textContent=t}
+function here(a){return location.pathname.toLowerCase()===(BASE+a).toLowerCase()}
+function remember(a){try{localStorage.setItem(KEY,a)}catch(e){}}
+function offer(a,label){if(!last||here(a))return;var l=last.querySelector('a');l.href=BASE+a;l.textContent=a.slice(0,6)+'\\u2026'+a.slice(-4);last.firstChild.textContent=label+': ';last.hidden=false}
 var who=null;try{who=localStorage.getItem(KEY)}catch(e){}
-if(last&&who&&/^0x[0-9a-fA-F]{40}$/.test(who)&&location.pathname.toLowerCase()!==(BASE+who).toLowerCase()){var a=last.querySelector('a');a.href=BASE+who;a.textContent=who.slice(0,6)+'\\u2026'+who.slice(-4);last.hidden=false}
+if(who&&/^0x[0-9a-fA-F]{40}$/.test(who))offer(who,'Last time here');
 if(!btn)return;var eth=window.ethereum;
 if(!eth||!eth.request){btn.disabled=true;btn.textContent='No wallet in this browser';return}
-btn.addEventListener('click',async function(){btn.disabled=true;
-  try{var accs=await eth.request({method:'eth_requestAccounts'});if(!accs||!accs.length)throw new Error('the wallet gave no account');var acc=accs[0];try{localStorage.setItem(KEY,acc)}catch(e){}location.href=BASE+acc}
+eth.request({method:'eth_accounts'}).then(function(accs){if(!accs||!accs.length)return;var a=accs[0];remember(a);if(here(a)){btn.textContent='This is your wallet';btn.disabled=true;return}if(ENTRY){location.replace(BASE+a);return}btn.textContent='Your wallet';btn.onclick=function(){location.href=BASE+a};offer(a,'Connected')}).catch(function(){});
+btn.addEventListener('click',async function(){if(btn.onclick)return;btn.disabled=true;
+  try{var accs=await eth.request({method:'eth_requestAccounts'});if(!accs||!accs.length)throw new Error('the wallet gave no account');var acc=accs[0];remember(acc);location.href=BASE+acc}
   catch(e){say(e&&e.code===4001?'Cancelled in the wallet.':'Failed: '+((e&&e.message)||e));btn.disabled=false}});
 })();
 </script>`;
@@ -570,6 +577,13 @@ export function feedXml(today: Day, chain: ChainState | null): string {
 <rss version="2.0"><channel><title>chainrun.onenft.click</title><link>https://${SITE}/</link><description>One Chain Runner a day, drawn on chain from the clock of the Base chain.</description><language>en</language>
 ${items.join("\n")}
 </channel></rss>`;
+}
+
+
+/** A wallet name or address in a heading: smaller when long, and it may break only before a dot. */
+export function nameHeading(name: string): string {
+  const size = name.length <= 11 ? "" : name.length <= 16 ? ' style="font-size:26px"' : ' style="font-size:20px;letter-spacing:-.02em"';
+  return `<span class="wname"${size}>${esc(name).replace(/\./g, "<wbr>.")}</span>`;
 }
 
 /** Where /go?who=... sends a typed address or ENS name. Anything else goes back to the form. */
