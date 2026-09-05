@@ -241,6 +241,9 @@ pre.snip{margin:0;padding:14px;background:var(--soft);overflow-x:auto;font-size:
 .sizes button{padding:0 12px;min-height:44px;display:flex;align-items:center;font-size:14px;color:var(--muted);border:0;border-right:1px solid var(--line);background:transparent;font-family:"Syne",system-ui,sans-serif;cursor:pointer}
 .sizes button:last-child{border-right:0}
 .sizes button[aria-pressed="true"]{background:var(--soft);color:var(--fg);font-weight:700}
+.top nav a,.nav a,.sitenav a,footer nav a,.links a,.cats a{font-family:"Syne",system-ui,sans-serif;font-weight:700;font-size:14px;letter-spacing:.01em;text-decoration:none;color:var(--muted)}
+.top nav a:hover,.nav a:hover,.sitenav a:hover,footer nav a:hover,.links a:hover,.cats a:hover{color:var(--fg);text-decoration:underline;text-underline-offset:4px}
+.top nav,.sitenav,footer nav,.links{gap:2px 24px}
 @media (max-width:1180px){
  .today{grid-template-columns:1fr}
  .today .knot{max-width:460px}
