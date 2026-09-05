@@ -1,0 +1,14 @@
+{
+  "name": "onenft-chainrun",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render": "bun run src/cli.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "viem": "^2.56.3"
+  }
+}

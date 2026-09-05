@@ -1,0 +1,24 @@
+name: ci
+on:
+  push:
+    branches: [master]
+  pull_request:
+jobs:
+  site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun test
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: oven-sh/setup-bun@v2
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: bun install --frozen-lockfile
+      - run: bun run contracts/fixtures.ts
+      - run: cd contracts && forge test -vv
