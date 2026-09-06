@@ -688,7 +688,7 @@ ${cta}
 ${counts}
 <hr>
 ${traitList(k)}
-<p class="small" style="line-height:1.7">The image and its rules live in the contract. This site only shows them.${chain ? `<br>Contract <a href="${explorer(chain.chainId)}/address/${chain.address}">${shortAddr(chain.address)}</a> on ${chainName(chain.chainId)}. A claimed day keeps its image forever${chain.rendererLocked ? ", and the drawing rules are locked for good" : "; the drawing rules can still change for days not yet claimed"}. <a href="${openseaCollection(chain)}">Collection on OpenSea</a>.` : ""}</p>
+<p class="small" style="line-height:1.7">The image and its rules live in the contract. This site only shows them.${chain ? `<br>Contract <a href="${explorer(chain.chainId)}/address/${chain.address}">${shortAddr(chain.address)}</a> on ${chainName(chain.chainId)}. A claimed day keeps its image forever${chain.rendererLocked ? ", and the drawing rules are locked for good" : "; the drawing rules can still change for days not yet claimed"}. <a href="${openseaCollection(chain)}">Collection on OpenSea</a>. <a href="${onChainChecker(chain)}">Fully on-chain, 5 of 5 on OnChainChecker</a>.` : ""}</p>
 ${today.n === 1 ? `<p class="small">This is day one. Tomorrow a second row appears under it, and so on, with no end.</p>` : ""}
 </div>
 </section>
@@ -696,7 +696,7 @@ ${today.n === 1 ? `<p class="small">This is day one. Tomorrow a second row appea
 <section class="format">${swatches(k)}<p style="max-width:520px;margin:0">Every runner is 32 by 32 pixels, up to 13 layers composited with alpha. Today: a <strong>${esc(k.race)}</strong> on <strong>${esc(k.traitMap["Background"])}</strong>, ${k.layers.length} layers. <a href="/how">See how the machine works</a></p></section>
 ${rows.join("\n")}
 ${older}
-<footer><span>This is not an investment and never will be. Images are CC0, like the layers they come from. One of the collections at <a href="https://${PARENT}">${PARENT}</a>.</span><nav aria-label="Footer">${menu([[`https://${PARENT}`, "All collections"]])}${chain ? `<a href="${openseaCollection(chain)}">OpenSea</a><a href="${explorer(chain.chainId)}/address/${chain.address}">Basescan</a>` : ""}<a href="/feed.xml">RSS</a><a href="/calendar.ics">Calendar</a><a href="${REPO}">Code</a></nav></footer>
+<footer><span>This is not an investment and never will be. Images are CC0, like the layers they come from. One of the collections at <a href="https://${PARENT}">${PARENT}</a>.</span><nav aria-label="Footer">${menu([[`https://${PARENT}`, "All collections"]])}${chain ? `<a href="${openseaCollection(chain)}">OpenSea</a><a href="${explorer(chain.chainId)}/address/${chain.address}">Basescan</a>` : ""}<a href="/feed.xml">RSS</a><a href="/calendar.ics">Calendar</a><a href="${REPO}">Code</a><a href="/terms">Terms</a><a href="/privacy">Privacy</a></nav></footer>
 </main>
 </div>
 ${chain && st === "available" ? mintScript(chain, today.n) : ""}
@@ -834,4 +834,47 @@ export function goTarget(who: string | null, base = "/", back = "/yours"): strin
   const w = (who ?? "").trim();
   if (/^0x[0-9a-fA-F]{40}$/.test(w) || /^[a-z0-9-]+(?:\.[a-z0-9-]+)*\.eth$/i.test(w)) return base + w;
   return `${back}?bad=${encodeURIComponent(w.slice(0, 80))}`;
+}
+
+// ---- terms and privacy ----
+
+/** Contract page URL on OnChainChecker, which scored day 1 "Fully On-Chain" (5 of 5) on 2026-09-07. */
+export function onChainChecker(chain: ChainState): string {
+  return `https://onchainchecker.xyz/collection/${chain.chainId === 8453 ? "base" : "base-sepolia"}/${chain.address}/1`;
+}
+
+export const LEGAL_UPDATED = "2026-09-07";
+
+/** /terms and /privacy: short, plain, true. The same text as the sister sites, with this contract's facts. */
+export function legalPage(kind: "terms" | "privacy", today: Day): string {
+  const k = runnerFor(today.epoch);
+  const contact = `<p>Questions go to <a href="${REPO}/issues">the repository</a> or to <a href="https://x.com/onenftclick">@onenftclick</a>.</p>`;
+  const terms = `<main class="prose" id="main">
+${topBar("Terms")}
+<h2 class="syne">Terms of use</h2>
+<p class="small">Last changed ${LEGAL_UPDATED}.</p>
+<p><strong>What this is.</strong> This site shows tokens that a contract on the Base chain mints and draws. The site reads the chain and nothing else. It holds no keys, no funds and no account of yours.</p>
+<p><strong>What you sign, you send.</strong> A claim goes from your wallet to the contract. You pay the network gas. A transaction that fails still costs gas. The contract asks for no mint fee, and any fee it did take would be written on this site before you sign.</p>
+<p><strong>The contract is the product.</strong> One token a day, with the day number as its id, and the first wallet to call claim that day gets it. Every tenth day up to day 1000 mints to the author instead. A minted token keeps its image; the author can change the drawing rules for days not yet claimed, never for a claimed day. The contract has no pause and no way to take a token back. Once a day has passed, an unclaimed day stays empty.</p>
+<p><strong>No promise of value.</strong> This is not an investment and never will be. Nobody promises that a token will sell, or sell for more than the gas it cost. Nothing on this site is financial, legal or tax advice. Your taxes and the law where you live are yours to follow.</p>
+<p><strong>No warranty.</strong> The site can go offline, show stale data or have bugs. The tokens do not depend on it: the image comes from the contract. The site and the code come as they are, with no warranty of any kind.</p>
+<p><strong>Licence.</strong> The 338 layers are CC0, released by Chain Runners in 2021. The runners this contract draws are CC0 too. The code is MIT. Use any of it, with or without credit. This project is not affiliated with Chain Runners; the name says where the layers come from and nothing more.</p>
+<p><strong>Changes.</strong> These terms can change. The date at the top says when they last did.</p>
+${contact}
+</main>`;
+  const privacy = `<main class="prose" id="main">
+${topBar("Privacy")}
+<h2 class="syne">Privacy</h2>
+<p class="small">Last changed ${LEGAL_UPDATED}.</p>
+<p><strong>No accounts, no cookies.</strong> This site has no sign-up, sets no cookies and runs no advertising. It does not sell data, because it keeps almost none.</p>
+<p><strong>Server logs.</strong> The host keeps standard access logs: address, path, time, browser string. They exist to keep the site running and to find faults, and they are not kept longer than that needs.</p>
+<p><strong>Page counts.</strong> The site may run Umami, a self-hosted counter that stores no cookie and does not follow you across sites. It counts pages, countries and browsers in aggregate.</p>
+<p><strong>Your wallet.</strong> When you connect a wallet, your browser hands the site your address so the page can show your days and the claim button. The address is kept in your browser's local storage so the page remembers you; clear it there. Opening a wallet page sends that address to the server, which looks it up on the chain. Your address and every transaction are public on Base by design; this site does not make them more or less public.</p>
+<p><strong>Third parties.</strong> Fonts load from Google Fonts. Chain reads go through a Base RPC provider. Links lead to OpenSea, Basescan and GitHub, which have their own rules.</p>
+<p><strong>Changes.</strong> This page can change. The date at the top says when it last did.</p>
+${contact}
+</main>`;
+  const body = kind === "terms" ? terms : privacy;
+  const title = kind === "terms" ? "Terms" : "Privacy";
+  return layout(`${title} | ${SITE}`, k.palette, body, `/day/${today.n}.png`, `/${kind}`);
 }

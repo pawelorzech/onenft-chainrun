@@ -2,7 +2,7 @@ import { mintPage } from "./mint-page.ts";
 import { runnerFor } from "./runners.ts";
 import { nowSeconds, dayOfTime, dayByNumber, secondsToStart } from "./chain.ts";
 import { chainState, chainStatus, contractEnabled, readNow, startClaimScan, CONTRACT, CHAIN_ID, type ChainState } from "./contract.ts";
-import { homePage, dayPage, howPage, notFound, chainDown, beforeStart, feedXml, goTarget } from "./site.ts";
+import { homePage, dayPage, howPage, legalPage, notFound, chainDown, beforeStart, feedXml, goTarget } from "./site.ts";
 import { explorePage, traitsPage, holderPage, yoursPage, assetsPage, embedPage, wordmarkSvg, PREVIEW_DAYS } from "./pages.ts";
 import { dayJson, daysJson, holderJson, summaryJson, specJson, calendarIcs } from "./api.ts";
 import { dayPng, squarePng } from "./image.ts";
@@ -102,6 +102,7 @@ async function route(url: URL): Promise<Response> {
   if (!today) {
     const dayOne = dayByNumber(1)!;
     if (path === "/how") return html(howPage(dayOne));
+    if (path === "/terms" || path === "/privacy") return html(legalPage(path.slice(1) as "terms" | "privacy", dayOne));
     if (path === "/today.svg") return svg(runnerFor(dayOne.epoch).svg, false);
     if (path === "/today.png") return png(dayPng(dayOne, false), false);
     return html(beforeStart(secondsToStart(now), dayOne));
@@ -110,6 +111,7 @@ async function route(url: URL): Promise<Response> {
   if (path === "/today.png") return png(dayPng(today, false), false);
   if (path === "/today.svg") return svg(runnerFor(today.epoch).svg, false);
   if (path === "/how") return html(howPage(today));
+  if (path === "/terms" || path === "/privacy") return html(legalPage(path.slice(1) as "terms" | "privacy", today));
   if (path === "/wordmark.svg") return svg(wordmarkSvg(runnerFor(today.epoch)), false);
   if (path === "/go") return redirect(goTarget(url.searchParams.get("who")), 302);
   const img = path.match(/^\/day\/(\d{1,6})(\.svg|\.png|-1024\.png)$/);

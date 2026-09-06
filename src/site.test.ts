@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { homePage, dayPage, howPage, feedXml, mix, dayState, STATE_TEXT, cssVars, contrast } from "./site.ts";
+import { homePage, dayPage, howPage, legalPage, feedXml, mix, dayState, STATE_TEXT, cssVars, contrast } from "./site.ts";
 import { dayByNumber } from "./chain.ts";
 import { EPOCH_SECONDS } from "./chain.ts";
 
@@ -221,3 +221,14 @@ test("muted text keeps 4.5:1 and control edges keep 3:1 on every day of the firs
     expect(contrast(fg, bg)).toBeGreaterThanOrEqual(4.5);
   }
 }, 20000);
+
+test("terms and privacy pages say what the site does and link back", () => {
+  const t = legalPage("terms", today);
+  expect(t).toContain("Terms of use");
+  expect(t).toContain("CC0");
+  expect(t).toContain('href="https://onenft.click"');
+  const p = legalPage("privacy", today);
+  expect(p).toContain("No accounts, no cookies");
+  expect(p).toContain("local storage");
+  for (const f of [t, p]) expect(f).toContain("Last changed");
+});
