@@ -561,7 +561,7 @@ async function resume(){
   try{var accs=await eth.request({method:'eth_accounts'});if(!accs||!accs.length)return;account=accs[0];var h=kept(account);if(h){btn.disabled=true;show('Transaction sent. Waiting for confirmation.',h);wait(h,account)}}catch(e){}
 }
 if(eth&&eth.on){eth.on('accountsChanged',function(accs){if(!accs||!accs.length||(account&&accs[0].toLowerCase()!==account.toLowerCase())){account=accs&&accs[0]||null;if(!btn.disabled)return;btn.disabled=false;say('The wallet account changed. The claim above belongs to the previous account.')}});
-  eth.on('chainChanged',function(){say('The wallet switched network. Switch back to '+CFG.name+' to claim.')})}
+  eth.on('chainChanged',function(id){if(parseInt(id,16)===parseInt(CFG.chainHex,16))return;say('The wallet switched network. Switch back to '+CFG.name+' to claim.')})}
 btn.addEventListener('click',async function(){
   if(!eth||!eth.request){say('No wallet detected. Open this site in your wallet\\u2019s browser, or install one like Rabby, MetaMask or Coinbase Wallet.');return}
   btn.disabled=true;
