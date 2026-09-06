@@ -1,3 +1,4 @@
+import { walletError } from "./wallet-error.ts";
 /**
  * Page HTML. One rule governs color: the page has no palette of its own.
  * It takes today's colors from the day's image, so it looks different every
@@ -453,6 +454,7 @@ export function connectScript(base = "/", entry = false): string {
   return `<script>
 (function(){
 var BASE=${JSON.stringify(base)};var ENTRY=${entry ? "true" : "false"};var KEY='onenft_who';var btn=document.getElementById('connect');var out=document.getElementById('msg');var last=document.getElementById('last');
+${walletError.toString()}
 function say(t){if(out)out.textContent=t}
 function here(a){return location.pathname.toLowerCase()===(BASE+a).toLowerCase()}
 function remember(a){try{localStorage.setItem(KEY,a)}catch(e){}}
@@ -464,9 +466,10 @@ if(!eth||!eth.request){btn.disabled=true;btn.textContent='No wallet detected';sa
 function known(accs){if(!accs||!accs.length){btn.textContent='Connect wallet';btn.onclick=null;btn.disabled=false;return}var a=accs[0];remember(a);if(here(a)){btn.textContent='This is your wallet';btn.disabled=true;return}if(ENTRY){location.replace(BASE+a);return}btn.textContent='Your wallet';btn.disabled=false;btn.onclick=function(){location.href=BASE+a};offer(a,'Connected')}
 eth.request({method:'eth_accounts'}).then(known).catch(function(){});
 if(eth.on){eth.on('accountsChanged',known);eth.on('disconnect',function(){known([])})}
-btn.addEventListener('click',async function(){if(btn.onclick)return;btn.disabled=true;
+btn.addEventListener('click',async function(){
+  var submitting=false;if(btn.onclick)return;btn.disabled=true;
   try{var accs=await eth.request({method:'eth_requestAccounts'});if(!accs||!accs.length)throw new Error('the wallet gave no account');var acc=accs[0];remember(acc);location.href=BASE+acc}
-  catch(e){say(e&&e.code===4001?'Cancelled in the wallet.':e&&e.code===-32002?'The wallet is already asking. Open it to answer.':'Failed: '+((e&&e.message)||e));btn.disabled=false}});
+  catch(e){say(walletError(e,typeof submitting!=='undefined'&&submitting));btn.disabled=false}});
 })();
 </script>`;
 }
@@ -550,6 +553,7 @@ function mintScript(chain: ChainState, day: number): string {
   return `<script>
 (function(){
 var CFG=${cfg};var btn=document.getElementById('mint');var out=document.getElementById('msg');var check=document.getElementById('check');
+${walletError.toString()}
 function say(t){out.textContent=t}
 function link(h){return ' <a href="'+CFG.explorer+'/tx/'+h+'" target="_blank" rel="noopener">View transaction</a>'}
 function show(t,h){out.textContent=t;if(h)out.insertAdjacentHTML('beforeend',link(h))}
@@ -576,6 +580,7 @@ async function resume(){
 if(eth&&eth.on){eth.on('accountsChanged',function(accs){if(!accs||!accs.length||(account&&accs[0].toLowerCase()!==account.toLowerCase())){account=accs&&accs[0]||null;if(!btn.disabled)return;btn.disabled=false;say('The wallet account changed. The claim above belongs to the previous account.')}});
   eth.on('chainChanged',function(id){if(parseInt(id,16)===parseInt(CFG.chainHex,16))return;say('The wallet switched network. Switch back to '+CFG.name+' to claim.')})}
 btn.addEventListener('click',async function(){
+  var submitting=false;
   if(!eth||!eth.request){say('No wallet detected. Open this site in your wallet\\u2019s browser, or install one like Rabby, MetaMask or Coinbase Wallet.');return}
   btn.disabled=true;
   try{
@@ -584,10 +589,10 @@ btn.addEventListener('click',async function(){
     try{await eth.request({method:'wallet_switchEthereumChain',params:[{chainId:CFG.chainHex}]})}
     catch(e){if(e&&e.code===4902){await eth.request({method:'wallet_addEthereumChain',params:[{chainId:CFG.chainHex,chainName:CFG.name,rpcUrls:[CFG.rpc],nativeCurrency:{name:'Ether',symbol:'ETH',decimals:18},blockExplorerUrls:[CFG.explorer]}]})}else{throw e}}
     say('Confirm in your wallet. 0 ETH mint fee. You pay network gas.');
-    var hash=await eth.request({method:'eth_sendTransaction',params:[{from:from,to:CFG.address,data:'0x4e71d92d'}]});
+    submitting=true;var hash=await eth.request({method:'eth_sendTransaction',params:[{from:from,to:CFG.address,data:'0x4e71d92d'}]});
     keep(from,hash);show('Transaction sent. Waiting for confirmation.',hash);
     await wait(hash,from);
-  }catch(e){say(e&&e.code===4001?'Cancelled in the wallet.':e&&e.code===-32002?'The wallet is already asking. Open it to answer.':'Failed: '+((e&&e.message)||e));btn.disabled=false}
+  }catch(e){say(walletError(e,typeof submitting!=='undefined'&&submitting));btn.disabled=false}
 });
 resume();
 })();

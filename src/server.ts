@@ -195,6 +195,7 @@ if (import.meta.main) {
     startClaimScan();
     if (process.env.DEPLOYER_KEY) startAutoclaim(process.env.DEPLOYER_KEY as Hex);
   }
-  Bun.serve({ port: PORT, fetch: handle });
+  const server = Bun.serve({ port: PORT, fetch: handle });
+  if (process.send) process.send({ port: server.port });
   console.log(`chainrun.onenft.click on :${PORT}`);
 }
