@@ -2,6 +2,7 @@
 # Point a site instance at a deployed contract. Usage: contracts/wire.sh sepolia|mainnet
 # Reads ~/.config/onenft-chainrun/deploy-<net>.json and the app uuids from ~/.config/onenft-chainrun/coolify.json,, sets CONTRACT_ADDRESS/CHAIN_ID/START_EPOCH/BASE_RPC_URL in Coolify, redeploys.
 set -euo pipefail
+source "$(dirname "$0")/../scripts/operator-safe.sh"
 NET="${1:?sepolia|mainnet}"
 case "$NET" in
   sepolia) APP=$(jq -r .test "$HOME/.config/onenft-chainrun/coolify.json"); RPC=https://sepolia.base.org;;
@@ -9,6 +10,8 @@ case "$NET" in
   *) echo "sepolia|mainnet"; exit 1;;
 esac
 D="$HOME/.config/onenft-chainrun/deploy-$NET.json"; [ -f "$D" ] || { echo "no $D"; exit 1; }
+bun "$OPERATOR_TOOL" deployment-addresses "$D"
+operator_json_address "$D" OneNFT >/dev/null
 python3 - "$NET" "$APP" "$RPC" "$D" <<'EOF'
 import sys, json, urllib.request, os
 net, app, rpc, dpath = sys.argv[1:5]
