@@ -167,6 +167,11 @@ button.cta[disabled]{opacity:.55;cursor:default}
 .tiles i{display:block;width:48px;height:48px;box-shadow:0 0 0 1px var(--line)}
 footer{padding:26px 34px;display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;color:var(--muted);font-size:16px}
 footer nav,.nav{display:flex;gap:6px 20px;flex-wrap:wrap}
+.head{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.step{display:flex;gap:2px}
+.step a{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;font-size:22px;line-height:1;color:var(--muted);text-decoration:none;box-shadow:0 0 0 1px var(--line)}
+.step a:hover{color:var(--fg);background:var(--soft)}
+.step .gone{display:inline-flex;min-width:44px;min-height:44px;box-shadow:0 0 0 1px var(--line);opacity:.35}
 footer nav a,.nav a,.top nav a{display:inline-flex;align-items:center;min-height:44px}
 .prose{max-width:640px;padding:38px 34px;display:flex;flex-direction:column;gap:22px}
 .prose h2{font-weight:800;font-size:34px;line-height:1;letter-spacing:-.03em;margin:22px 0 0}
@@ -176,7 +181,7 @@ footer nav a,.nav a,.top nav a{display:inline-flex;align-items:center;min-height
 .single{padding:38px 34px;display:flex;flex-direction:column;gap:22px;max-width:760px}
 .single .knot{width:100%;max-width:640px;aspect-ratio:1;box-shadow:0 0 0 1px var(--line)}
 .single .knot svg{display:block;width:100%;height:100%}
-.top{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+.top{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
 .top nav{display:flex;gap:4px 18px;flex-wrap:wrap;font-size:16px;color:var(--muted)}
 .wide{padding:38px 34px;display:flex;flex-direction:column;gap:28px;max-width:1180px}
 .wide h2{font-weight:800;font-size:34px;line-height:1;letter-spacing:-.03em;margin:0}
@@ -211,7 +216,7 @@ pre.snip{margin:0;padding:14px;background:var(--soft);overflow-x:auto;font-size:
 .crumb a,.crumb span[aria-current]{display:inline-flex;align-items:center;min-height:44px}
 .crumb .hub{color:var(--muted)}
 .crumb .sep{color:var(--line);font-weight:800;font-size:20px}
-.crumb span[aria-current]{color:var(--muted);font-size:16px}
+.crumb span[aria-current]{color:var(--muted);font-size:16px;font-family:"Syne",system-ui,sans-serif;font-weight:700}
 @media (min-width:901px){
  aside .crumb ol,aside .crumb li{flex-direction:column;gap:2px;align-items:flex-start}
  aside .crumb .sep{display:none}
@@ -336,6 +341,10 @@ export function stripSize(svg: string): string {
  * tab comes back, and when the day turns it says so and offers a refresh. It
  * never reloads the page by itself: a reload would drop a transaction in flight.
  */
+/** Left and right arrow keys walk to the neighbouring token; typing in a field is left alone. */
+export const STEP_KEYS = `<script>
+(function(){document.addEventListener('keydown',function(e){if(e.altKey||e.ctrlKey||e.metaKey||e.shiftKey)return;var t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable))return;var a=e.key==='ArrowLeft'?document.querySelector('a[rel=prev]'):e.key==='ArrowRight'?document.querySelector('a[rel=next]'):null;if(a){e.preventDefault();location.href=a.href}})})();
+</script>`;
 export const COUNTDOWN = `<script>
 (function(){var el=document.querySelector('[data-left]');if(!el)return;var s=+el.getAttribute('data-left');var t0=Date.now();var told=false;
 function f(x){var h=Math.floor(x/3600),m=Math.floor(x%3600/60);return h?h+' h '+m+' min':m+' min'}
@@ -689,8 +698,8 @@ ${COUNTDOWN}`;
 
 export function dayPage(d: Day, today: Day, chain: ChainState | null = null, names: Names = NO_NAMES, status: ChainStatus | null = null): string {
   const k = runnerFor(d.epoch);
-  const prev = d.n > 1 ? `<a href="/day/${d.n - 1}">previous</a>` : "";
-  const next = d.n < today.n ? `<a href="/day/${d.n + 1}">next</a>` : "";
+  const prev = d.n > 1 ? `<a rel="prev" href="/day/${d.n - 1}" aria-label="Day ${d.n - 1}" title="Day ${d.n - 1}, left arrow key">&larr;</a>` : `<span class="gone" aria-hidden="true"></span>`;
+  const next = d.n < today.n ? `<a rel="next" href="/day/${d.n + 1}" aria-label="Day ${d.n + 1}" title="Day ${d.n + 1}, right arrow key">&rarr;</a>` : `<span class="gone" aria-hidden="true"></span>`;
   const st = dayState(d.n, today.n, chain, status);
   let state = d.n === today.n ? "today" : `day ${d.n} of ${today.n}`;
   let came = "";
@@ -712,15 +721,16 @@ export function dayPage(d: Day, today: Day, chain: ChainState | null = null, nam
 ${topBar(`Day ${d.n}`)}
 ${staleNote(status)}
 <div class="knot">${stripSize(k.svg)}</div>
-<div><h2 class="num syne" style="margin:0">${d.n}</h2><p class="lead">${state}</p></div>
+<div><div class="head"><h2 class="num syne" style="margin:0">${d.n}</h2><nav class="step" aria-label="Neighbouring days">${prev}${next}</nav></div><p class="lead">${state}</p></div>
 ${came}
 ${traitList(k)}
 <p class="small" style="line-height:1.7">${dateOf(d.epoch)}, UTC${chain ? `<br>Token ${d.n} of <a href="${explorer(chain.chainId)}/address/${chain.address}">${shortAddr(chain.address)}</a> on ${chainName(chain.chainId)}. The image lives in the contract.` : ""}</p>
-<nav class="nav" aria-label="Days">${prev}${next}<a href="/">all days</a><a href="/explore">calendar</a></nav>
+<nav class="nav" aria-label="Days"><a href="/">all days</a><a href="/explore">calendar</a></nav>
 <nav class="nav small" aria-label="Links">${chain && chain.owners.has(d.n) ? `<a href="${opensea(chain, d.n)}">OpenSea</a><a href="${explorer(chain.chainId)}/nft/${chain.address}/${d.n}">Basescan</a>` : ""}<a href="/day/${d.n}.svg" download="${FILE_PREFIX}-day-${d.n}.svg">SVG</a><a href="/day/${d.n}-1024.png" download="${FILE_PREFIX}-day-${d.n}-1024.png">PNG</a><a href="/day/${d.n}.png">Link card</a></nav>
 ${share}
 <details><summary class="small">Put this runner on your page</summary><pre class="snip">${snippet}</pre><p class="small">CC0. No credit needed.</p></details>
-</main>`;
+</main>
+${STEP_KEYS}`;
   return layout(`Day ${d.n} | ${SITE}`, k.palette, body, `/day/${d.n}.png`, `/day/${d.n}`, `Day ${d.n} of ${SITE}, ${dateOf(d.epoch)} UTC: ${summary(k)}. ${STATE_TEXT[st]}.`);
 }
 
