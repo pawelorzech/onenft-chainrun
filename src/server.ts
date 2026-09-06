@@ -1,3 +1,4 @@
+import { mintPage } from "./mint-page.ts";
 import { runnerFor } from "./runners.ts";
 import { nowSeconds, dayOfTime, dayByNumber, secondsToStart } from "./chain.ts";
 import { chainState, chainStatus, contractEnabled, readNow, startClaimScan, CONTRACT, CHAIN_ID, type ChainState } from "./contract.ts";
@@ -141,6 +142,11 @@ async function route(url: URL): Promise<Response> {
   if (path === "/assets") return html(assetsPage(today, chain));
   if (path === "/yours") return html(yoursPage(today, chain, status, url.searchParams.get("bad")));
   if (path === "/embed") return html(embedPage(today, chain, await namesFor(chain, chain?.owners.get(today.n) ? [chain.owners.get(today.n)!] : [])));
+  if (path === "/api/mints") {
+    if (!chain || status.stale) return json({ error: "chain unavailable" }, 0, 503);
+    const page = mintPage(chain, [...chain.owners.keys()], url.searchParams, (id) => dayJson(dayByNumber(id)!, today, chain, undefined, status));
+    return json(page, 0, "error" in page ? 400 : 200);
+  }
   if (path === "/api/today") return json(dayJson(today, today, chain, await namesFor(chain, chain?.owners.get(today.n) ? [chain.owners.get(today.n)!] : []), status));
   if (path === "/api/summary") return json(summaryJson(today, chain, status), 15);
   if (path === "/api/days") return json(daysJson(today, chain, await namesFor(chain), status));

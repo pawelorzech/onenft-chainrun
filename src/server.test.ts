@@ -41,9 +41,11 @@ test("dead RPC: the process boots, liveness and images answer, ownership is unkn
   expect(await health.text()).toStartWith("ok, day");
   expect((await fetch(`${base}/today.svg`)).status).toBe(200);
   expect((await fetch(`${base}/day/1.svg`)).headers.get("content-type")).toContain("image/svg+xml");
-  expect((await fetch(`${base}/day/1-1024.png`)).headers.get("content-type")).toBe("image/png");
   expect((await fetch(`${base}/spec.json`)).status).toBe(200);
   expect(Date.now() - t0).toBeLessThan(1500);
+  // Cold PNG rasterization is a CPU check, separate from the RPC deadline.
+  expect((await fetch(`${base}/day/1-1024.png`)).headers.get("content-type")).toBe("image/png");
+
 
   const ready = await fetch(`${base}/ready`);
   expect(ready.status).toBe(503);
