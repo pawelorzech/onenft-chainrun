@@ -3,11 +3,12 @@
  * as site.ts: plain words, active voice, no adverbs, no em dashes.
  */
 import { runnerFor, renderDay, summary, SLOTS, TRAIT_TYPES, type Runner } from "./runners.ts";
-import { WEIGHTS } from "./layers.ts";
+import { odds } from "./odds.ts";
 import { dayByNumber, dateOf, type Day } from "./chain.ts";
 import type { ChainState, ChainStatus } from "./contract.ts";
 import { SITE, REPO, PARENT, FILE_PREFIX, RUNNERS, RUNNERS_RENDERER, layout, topBar, label, shortAddr, isAuthor, explorer, opensea, openseaCollection, chainName, num, plural, stripSize, esc, afterMidnight, traitList, whoBlock, sizePicker, downloadBar, connectScript, downloadScript, nameHeading, staleNote, dayState, type Names, NO_NAMES } from "./site.ts";
 import type { Address } from "viem";
+import { holderFacts } from "./facts.ts";
 
 const DOW = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -78,14 +79,6 @@ ${months.join("\n")}
 
 type Seen = { days: number[]; taken: number };
 
-/** Share of days a slot item gets in the long run: its weight across the three race tables, weighted by how often each race comes up. */
-function odds(slot: number, item: number): number {
-  const raceTable = WEIGHTS[0][1];
-  const raceShare = [0, 0, 0];
-  raceTable.forEach((w, i) => { raceShare[i === 1 ? 2 : i > 11 ? 1 : 0] += w / 10000; });
-  return raceShare.reduce((sum, share, race) => sum + share * ((WEIGHTS[race][slot][item] ?? 0) / 10000), 0);
-}
-
 export function traitsPage(today: Day, chain: ChainState | null = null): string {
   const k = runnerFor(today.epoch);
   const seen = new Map<string, Seen>();
@@ -152,6 +145,8 @@ export function holderPage(who: Address, handle: string, today: Day, chain: Chai
   const rawName = names.get(who.toLowerCase()) ?? shortAddr(who);
   const name = esc(rawName);
   const author = isAuthor(chain, who);
+  const facts = holderFacts(who, today, chain);
+  const factList = facts.length ? `<ul class="facts" aria-label="About these days">${facts.map((f) => `<li><span class="fig syne">${esc(f.figure)}</span><span class="lab">${esc(f.label)}</span></li>`).join("")}</ul>` : "";
   const rows = mine.map((n) => {
     const d = dayByNumber(n)!;
     const kk = runnerFor(d.epoch);
@@ -172,6 +167,7 @@ ${downloadBar(n, kk.palette.bg)}
 ${topBar(rawName)}
 ${staleNote(status)}
 <div><h2 class="syne">${nameHeading(rawName)}</h2><p class="lead" style="margin-top:8px">${author ? "The author. Every tenth day up to day 1000 lands here." : `${mine.length} ${plural(mine.length, "day", "days")} of ${today.n}.`}${handle.toLowerCase() !== who.toLowerCase() ? ` <span class="small">${shortAddr(who)}</span>` : ""}</p></div>
+${factList}
 ${whoBlock(chain)}
 ${rows.length ? `${sizePicker()}\n<div>${rows.join("\n")}</div>` : `<p>No days here yet. <a href="/">Today's runner</a> may still be available.</p>`}
 <nav class="nav small" style="padding-top:20px;border-top:1px solid var(--line)" aria-label="Wallet links"><a href="${explorer(chain.chainId)}/address/${who}">Basescan</a><a href="${chain.chainId === 8453 ? `https://opensea.io/${who}` : `https://testnets.opensea.io/${who}`}">OpenSea</a><a href="/api/holder/${who}">JSON</a><a href="https://${PARENT}/wallet/${who}">This wallet on ${PARENT}</a></nav>

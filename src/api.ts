@@ -8,6 +8,7 @@ import { dayByNumber, dateOf, type Day } from "./chain.ts";
 import type { ChainState, ChainStatus } from "./contract.ts";
 import { SITE, isAuthor, opensea, explorer, dayState, type Names, NO_NAMES } from "./site.ts";
 import type { Address } from "viem";
+import { holderFacts } from "./facts.ts";
 
 /**
  * How old the ownership data in an answer is. `known` false means no chain
@@ -91,7 +92,7 @@ export function summaryJson(today: Day, chain: ChainState | null, status: ChainS
 
 export function holderJson(who: Address, today: Day, chain: ChainState, names: Names = NO_NAMES, status: ChainStatus | null = null) {
   const mine = [...chain.owners].filter(([, o]) => o.toLowerCase() === who.toLowerCase()).map(([n]) => n).sort((a, b) => a - b);
-  return { address: who, name: names.get(who.toLowerCase()) ?? null, author: isAuthor(chain, who), chain: chainBlock(status), days: mine.map((n) => dayJson(dayByNumber(n)!, today, chain, names, status)) };
+  return { address: who, name: names.get(who.toLowerCase()) ?? null, author: isAuthor(chain, who), chain: chainBlock(status), facts: holderFacts(who, today, chain), days: mine.map((n) => dayJson(dayByNumber(n)!, today, chain, names, status)) };
 }
 
 export function specJson() {
