@@ -1,3 +1,4 @@
+import { readChain, sendWithTimeout } from "./chain-read.ts";
 import { walletError } from "./wallet-error.ts";
 /**
  * Page HTML. One rule governs color: the page has no palette of its own.
@@ -541,7 +542,7 @@ export function isAuthor(chain: ChainState, a?: string): boolean {
  * refresh or a return to the tab picks the wait back up instead of asking for
  * a second transaction. A timeout is an unknown outcome, never a retry.
  */
-function mintScript(chain: ChainState, day: number): string {
+export function mintScript(chain: ChainState, day: number): string {
   const cfg = JSON.stringify({
     address: chain.address,
     chainHex: "0x" + chain.chainId.toString(16),
@@ -554,45 +555,53 @@ function mintScript(chain: ChainState, day: number): string {
 (function(){
 var CFG=${cfg};var btn=document.getElementById('mint');var out=document.getElementById('msg');var check=document.getElementById('check');
 ${walletError.toString()}
+${readChain.toString()}
+${sendWithTimeout.toString()}
 function say(t){out.textContent=t}
 function link(h){return ' <a href="'+CFG.explorer+'/tx/'+h+'" target="_blank" rel="noopener">View transaction</a>'}
 function show(t,h){out.textContent=t;if(h)out.insertAdjacentHTML('beforeend',link(h))}
 function sleep(ms){return new Promise(function(r){setTimeout(r,ms)})}
 function key(a){return 'onenft_claim:'+CFG.chainHex+':'+CFG.address.toLowerCase()+':'+CFG.day+':'+a.toLowerCase()}
-function keep(a,h){try{localStorage.setItem(key(a),h)}catch(e){}}
+function keep(a,h){localStorage.setItem(key(a),h)}
 function kept(a){try{return localStorage.getItem(key(a))}catch(e){return null}}
 function drop(a){try{localStorage.removeItem(key(a))}catch(e){}}
 var eth=window.ethereum;
 var account=null;
 async function wait(hash,from){
   for(var i=0;i<45;i++){
-    var r=null;try{r=await eth.request({method:'eth_getTransactionReceipt',params:[hash]})}catch(e){}
+    var r=null;try{r=(await readChain('/api/transaction/'+hash,CFG.chainHex,CFG.address)).receipt}catch(e){}
+    if(!account||account.toLowerCase()!==from.toLowerCase())return false;
     if(r){drop(from);if(r.status==='0x1'){show('The day is yours. Reloading.',hash);await sleep(1500);location.reload()}else{show('The network rejected the transaction. Someone may have been faster, or the day turned.',hash);btn.disabled=false}return true}
     if(document.hidden){await sleep(4000)}else{await sleep(2000)}
   }
   show('We cannot confirm the transaction yet. Check its status before trying again.',hash);check.hidden=false;check.onclick=function(){check.hidden=true;show('Checking.',hash);wait(hash,from)};
   return false;
 }
+function uncertain(from){show('The previous request has an unknown result. Check wallet activity before trying again.');check.hidden=false;check.onclick=function(){if(confirm('Check your wallet activity first. Clear this warning only if no transaction was sent. Have you confirmed that nothing was sent?')){drop(from);check.hidden=true;btn.disabled=false;say('The warning is cleared. You can try again.')}}}
 async function resume(){
   if(!eth||!eth.request)return;
-  try{var accs=await eth.request({method:'eth_accounts'});if(!accs||!accs.length)return;account=accs[0];var h=kept(account);if(h){btn.disabled=true;show('Transaction sent. Waiting for confirmation.',h);wait(h,account)}}catch(e){}
+  try{var accs=await eth.request({method:'eth_accounts'});if(!accs||!accs.length)return;account=accs[0];var h=kept(account);if(h){btn.disabled=true;if(h==='uncertain'){uncertain(account);return}show('Transaction sent. Waiting for confirmation.',h);wait(h,account)}}catch(e){}
 }
 if(eth&&eth.on){eth.on('accountsChanged',function(accs){if(!accs||!accs.length||(account&&accs[0].toLowerCase()!==account.toLowerCase())){account=accs&&accs[0]||null;if(!btn.disabled)return;btn.disabled=false;say('The wallet account changed. The claim above belongs to the previous account.')}});
   eth.on('chainChanged',function(id){if(parseInt(id,16)===parseInt(CFG.chainHex,16))return;say('The wallet switched network. Switch back to '+CFG.name+' to claim.')})}
 btn.addEventListener('click',async function(){
-  var submitting=false;
+  if(btn.disabled)return;var submitting=false;var from=null;
   if(!eth||!eth.request){say('No wallet detected. Open this site in your wallet\\u2019s browser, or install one like Rabby, MetaMask or Coinbase Wallet.');return}
   btn.disabled=true;
   try{
-    var accs=await eth.request({method:'eth_requestAccounts'});if(!accs||!accs.length)throw new Error('the wallet gave no account');var from=accs[0];account=from;
-    var h=kept(from);if(h){show('A claim from this wallet is already waiting.',h);await wait(h,from);return}
-    try{await eth.request({method:'wallet_switchEthereumChain',params:[{chainId:CFG.chainHex}]})}
+    var accs=await eth.request({method:'eth_requestAccounts'});if(!accs||!accs.length)throw new Error('the wallet gave no account');from=accs[0];account=from;
+    var h=kept(from);if(h==='uncertain'){uncertain(from);return}if(h){show('A claim from this wallet is already waiting.',h);await wait(h,from);return}
+    var network=await eth.request({method:'eth_chainId'});
+    if(BigInt(network)!==BigInt(CFG.chainHex))try{await eth.request({method:'wallet_switchEthereumChain',params:[{chainId:CFG.chainHex}]})}
     catch(e){if(e&&e.code===4902){await eth.request({method:'wallet_addEthereumChain',params:[{chainId:CFG.chainHex,chainName:CFG.name,rpcUrls:[CFG.rpc],nativeCurrency:{name:'Ether',symbol:'ETH',decimals:18},blockExplorerUrls:[CFG.explorer]}]})}else{throw e}}
     say('Confirm in your wallet. 0 ETH mint fee. You pay network gas.');
-    submitting=true;var hash=await eth.request({method:'eth_sendTransaction',params:[{from:from,to:CFG.address,data:'0x4e71d92d'}]});
+    network=await eth.request({method:'eth_chainId'});var current=await eth.request({method:'eth_accounts'});
+    if(BigInt(network)!==BigInt(CFG.chainHex))throw Object.assign(new Error('wrong network'),{code:4901});
+    if(!current||!current[0]||current[0].toLowerCase()!==from.toLowerCase())throw Object.assign(new Error('account changed'),{code:4100});
+    keep(from,'uncertain');submitting=true;var hash=await sendWithTimeout(eth,{from:from,to:CFG.address,data:'0x4e71d92d'});
     keep(from,hash);show('Transaction sent. Waiting for confirmation.',hash);
     await wait(hash,from);
-  }catch(e){say(walletError(e,typeof submitting!=='undefined'&&submitting));btn.disabled=false}
+  }catch(e){if(submitting&&e&&e.code===4001){drop(from);submitting=false}if(submitting){uncertain(from);btn.disabled=true}else{say(walletError(e,false));btn.disabled=false}}
 });
 resume();
 })();

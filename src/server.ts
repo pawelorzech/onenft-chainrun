@@ -1,3 +1,4 @@
+import { transactionApi } from "./transaction-status.ts";
 import { mintPage } from "./mint-page.ts";
 import { runnerFor } from "./runners.ts";
 import { nowSeconds, dayOfTime, dayByNumber, secondsToStart } from "./chain.ts";
@@ -10,6 +11,7 @@ import { ensNames, resolveHolder, resolveFailed } from "./ens.ts";
 import { startAutoclaim } from "./autoclaim.ts";
 import type { Hex } from "viem";
 
+const transactionRead = transactionApi({ address: CONTRACT, chainId: CHAIN_ID, tokenReads: false });
 const PORT = Number(process.env.PORT ?? 3000);
 const BOOT_AT = Date.now();
 
@@ -78,6 +80,8 @@ export async function handle(req: Request): Promise<Response> {
 
 async function route(url: URL): Promise<Response> {
   const path = url.pathname;
+  const transactionResponse = await transactionRead(url);
+  if (transactionResponse) return transactionResponse;
   if (LEGACY[path]) return redirect(LEGACY[path]);
   const legacyDay = path.match(/^\/doba\/(\d{1,6})(\.svg)?$/);
   if (legacyDay) return redirect(`/day/${legacyDay[1]}${legacyDay[2] ?? ""}`);
