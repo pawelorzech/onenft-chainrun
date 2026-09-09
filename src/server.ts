@@ -93,6 +93,7 @@ async function route(url: URL): Promise<Response> {
   const today = dayOfTime(now);
 
   // ---- everything that needs no chain answers before any chain read
+  if (path === "/robots.txt") return new Response("User-agent: *\nAllow: /\nDisallow: /api/\n", { headers: { "content-type": "text/plain; charset=utf-8" } });
   if (path === "/spec.json") return json(specJson(), 3600);
   if (path === "/calendar.ics") return new Response(calendarIcs(dayByNumber(1)!), { headers: { "content-type": "text/calendar; charset=utf-8", "cache-control": "public, max-age=86400" } });
   // Liveness: the process is up. Never depends on the RPC, so a dead RPC never restarts the site.

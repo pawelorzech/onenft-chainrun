@@ -122,7 +122,7 @@ test("day page links to OpenSea and Basescan only for claimed days", () => {
   const t = dayByNumber(5)!;
   const c = fakeChain(5, { 2: "0x2222222222222222222222222222222222222222" });
   expect(dayPage(dayByNumber(2)!, t, c)).toContain("opensea.io/assets/base_sepolia/");
-  expect(dayPage(dayByNumber(3)!, t, c)).not.toContain("opensea.io");
+  expect(dayPage(dayByNumber(3)!, t, c)).not.toContain(`${c.address}/3`);
   expect(dayPage(dayByNumber(3)!, t, c)).toContain('href="/day/3.png"');
 });
 
