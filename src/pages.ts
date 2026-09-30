@@ -45,7 +45,7 @@ function monthGrid(year: number, month: number, today: Day, chain: ChainState | 
       : `<a href="/day/${n}" title="${title}"><img src="/day/${n}.svg" alt="" loading="lazy"><span>${dom}</span></a>`);
   }
   while ((cells.length - 7) % 7 !== 0) cells.push(`<div class="blank"></div>`);
-  return `<section><h3 class="syne">${MONTHS[month]} ${year}</h3><div class="cal">${cells.join("")}</div></section>`;
+  return `<section><h2 class="syne section-title">${MONTHS[month]} ${year}</h2><div class="cal">${cells.join("")}</div></section>`;
 }
 
 export function explorePage(today: Day, chain: ChainState | null = null, status: ChainStatus | null = null): string {
@@ -70,7 +70,7 @@ ${topBar("Explore")}
 ${staleNote(status)}
 <div><h1 class="syne">Every day so far</h1><p class="lead" style="margin-top:8px">${today.n} ${plural(today.n, "day", "days")} run${chain ? `, ${taken} claimed, ${gaps} ${plural(gaps, "gap", "gaps")}` : ""}. Hatched days are gaps: the day ended without a claim, and it can no longer be minted. Dimmed days have not happened yet.</p></div>
 ${months.join("\n")}
-<section><h3 class="syne">The next ${PREVIEW_DAYS} days</h3><p class="small" style="margin:6px 0 14px">The draw exists before anyone sees it. One caveat: the drawing rules can still change for days nobody has claimed yet, so a preview is a promise only once its day arrives.</p><div class="strip">${preview.join("")}</div></section>
+<section><h2 class="syne section-title">The next ${PREVIEW_DAYS} days</h2><p class="small" style="margin:6px 0 14px">The draw exists before anyone sees it. One caveat: the drawing rules can still change for days nobody has claimed yet, so a preview is a promise only once its day arrives.</p><div class="strip">${preview.join("")}</div></section>
 ${footer(chain)}
 </main>`;
   return layout(`Explore | ${SITE}`, k.palette, body, `/day/${today.n}.png`, "/explore");
@@ -112,7 +112,7 @@ export function traitsPage(today: Day, chain: ChainState | null = null): string 
     });
     const e = empty.get(slot);
     const emptyRow = slot < 2 ? "" : `<tr><td class="small">none</td><td class="n"></td><td class="n">${e?.days.length ?? 0}</td>${chain ? `<td class="n">${e?.taken ?? 0}</td>` : ""}<td></td></tr>`;
-    return `<section id="s${slot}"><h3 class="syne">${type}</h3><div class="scroll"><table class="tr"><thead><tr><th>layer</th><th style="text-align:right">odds</th><th style="text-align:right">so far</th>${chain ? `<th style="text-align:right">claimed</th>` : ""}<th>days</th></tr></thead><tbody>${rows.join("")}${emptyRow}</tbody></table></div></section>`;
+    return `<section id="s${slot}"><h2 class="syne section-title">${type}</h2><div class="scroll"><table class="tr"><thead><tr><th>layer</th><th style="text-align:right">odds</th><th style="text-align:right">so far</th>${chain ? `<th style="text-align:right">claimed</th>` : ""}<th>days</th></tr></thead><tbody>${rows.join("")}${emptyRow}</tbody></table></div></section>`;
   });
   const body = `<main class="wide" id="main">
 ${topBar("Traits")}
@@ -134,12 +134,12 @@ ${topBar("Your wallet")}
 ${staleNote(status)}
 <div><h1 class="syne">Your days</h1><p class="lead" style="margin-top:8px">Connect a wallet or type an address, and this page lists every runner it holds, each one ready to save as SVG, PNG or JPEG.</p></div>
 ${bad !== null ? `<p class="note" role="alert">"${esc(bad)}" is not a wallet address or an ENS name. An address is 42 characters starting with 0x; a name ends in .eth.</p>` : ""}
-${whoBlock(chain, status)}
+${whoBlock(chain, status, bad ?? "")}
 <p class="small">Viewing a wallet needs no transaction and no signature. Its public address appears in the page URL and is sent to this site to load its tokens. The same list is on <a href="https://${PARENT}/wallet">${PARENT}</a> for every collection at once; each site connects on its own.</p>
 ${footer(chain)}
 </main>
 ${connectScript("/", true)}`;
-  return layout(`Your days | ${SITE}`, k.palette, body, `/day/${today.n}.png`, "/yours");
+  return layout(`Your days | ${SITE}`, k.palette, body, `/day/${today.n}.png`, "/yours", undefined, false);
 }
 
 export function holderPage(who: Address, handle: string, today: Day, chain: ChainState, names: Names = NO_NAMES, status: ChainStatus | null = null): string {
@@ -221,7 +221,7 @@ export function embedPage(today: Day, chain: ChainState | null = null, names: Na
 <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><span class="syne" style="font-weight:800;font-size:22px">Day ${today.n}</span><span class="small">${state}</span></div>
 <a class="small" href="https://${SITE}/" target="_top">${SITE}, one runner a day</a>
 </main>`;
-  return layout(`Day ${today.n} | ${SITE}`, k.palette, body, `/day/${today.n}.png`, "/embed");
+  return layout(`Day ${today.n} | ${SITE}`, k.palette, body, `/day/${today.n}.png`, "/embed", undefined, false);
 }
 
 /** The domain as an SVG wordmark in a palette's colors. */

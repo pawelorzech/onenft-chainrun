@@ -1,3 +1,4 @@
+import { pageDescription } from "./seo.ts";
 import { readChain, sendWithTimeout } from "./chain-read.ts";
 import { walletError } from "./wallet-error.ts";
 /**
@@ -125,8 +126,11 @@ function css(p: Palette): string {
 [hidden]{display:none!important}
 html{background:var(--bg);color:var(--fg);font-family:"Newsreader",Georgia,serif;font-size:17px;line-height:1.5}
 body{margin:0;min-height:100vh}
+main,aside,.meta{min-width:0}
+p,li,dd,.crumb,.lead,.small,.wname{overflow-wrap:anywhere}
+main{scroll-margin-top:16px}
 a{color:inherit}
-a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--fg);outline-offset:3px}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--fg);outline-offset:3px}
 .skip{position:absolute;left:-999px;top:8px;background:var(--fg);color:var(--bg);padding:8px 14px;font-weight:700;z-index:9}
 .skip:focus{left:8px}
 .syne{font-family:"Syne",system-ui,sans-serif}
@@ -136,7 +140,7 @@ aside .stick{position:sticky;top:38px;display:flex;flex-direction:column;gap:28p
 .mark{font-weight:800;font-size:20px;letter-spacing:-.01em;text-decoration:none}
 h1{font-weight:800;font-size:33px;line-height:.96;letter-spacing:-.045em;margin:0;overflow-wrap:normal;hyphens:manual}
 .lead{color:var(--muted);margin:0}
-.facts{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));border-top:1px solid var(--line);border-left:1px solid var(--line);max-width:1120px}
+.facts{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(220px,100%),1fr));border-top:1px solid var(--line);border-left:1px solid var(--line);max-width:1120px}
 .facts li{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:18px 20px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
 .facts .fig{font-weight:800;font-size:28px;line-height:1;letter-spacing:-.03em;white-space:nowrap}
 .facts .lab{font-size:15px;color:var(--muted);line-height:1.35}
@@ -192,7 +196,7 @@ footer nav a,.nav a,.top nav a{display:inline-flex;align-items:center;min-height
 .top nav{display:flex;gap:4px 18px;flex-wrap:wrap;font-size:16px;color:var(--muted)}
 .wide{padding:38px 34px;display:flex;flex-direction:column;gap:28px;max-width:1180px}
 .wide h1,.wide h2{font-weight:800;font-size:34px;line-height:1;letter-spacing:-.03em;margin:0}
-.wide h3{font-weight:700;font-size:20px;margin:0}
+.wide h3,.wide h2.section-title{font-weight:700;font-size:20px;margin:0}
 .wide p{margin:0}
 .cal{max-width:900px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
 .cal .dow{background:var(--bg);padding:6px 8px;font-size:13px;color:var(--muted)}
@@ -205,8 +209,8 @@ footer nav a,.nav a,.top nav a{display:inline-flex;align-items:center;min-height
 .cal a:hover{outline:2px solid var(--fg);outline-offset:-2px;z-index:1}
 .strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}
 .strip a{text-decoration:none}
-.strip img,.strip svg{width:100%;aspect-ratio:1;display:block;box-shadow:0 0 0 1px var(--line)}
-.strip .cap{font-size:14px;color:var(--muted);margin-top:6px}
+.strip img,.strip svg{width:100%;height:auto;aspect-ratio:1;display:block;box-shadow:0 0 0 1px var(--line)}
+.strip .cap{overflow-wrap:anywhere;font-size:14px;color:var(--muted);margin-top:6px}
 table.tr{border-collapse:collapse;width:100%;max-width:640px;font-size:16px}
 table.tr th,table.tr td{text-align:left;padding:8px 10px 8px 0;border-bottom:1px solid var(--line);vertical-align:top}
 table.tr th{font-weight:400;color:var(--muted);font-size:14px}
@@ -232,10 +236,11 @@ pre.snip{margin:0;padding:14px;background:var(--soft);overflow-x:auto;font-size:
 }
 .sitenav{display:flex;gap:4px 22px;flex-wrap:wrap;padding:6px 34px;border-bottom:1px solid var(--line)}
 .whobox{display:flex;flex-direction:column;gap:8px}
-.wname{overflow-wrap:normal;word-break:keep-all}
+.wname{overflow-wrap:anywhere;word-break:normal}
 .who{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;max-width:720px}
 .who form{display:flex;flex-direction:column;gap:8px;flex:1;min-width:280px}
-.who form .line{display:flex;gap:12px}
+.who form .line{display:flex;gap:12px;flex-wrap:wrap}
+.who form .line .field{min-width:min(100%,180px)}
 .who label{font-size:15px;color:var(--muted)}
 .who .cta{min-height:48px;height:48px;padding:0 22px;font-size:17px;width:auto}
 .field{height:48px;padding:0 16px;border:1px solid var(--edge);background:transparent;color:var(--fg);flex:1;min-width:0;font-family:ui-monospace,Menlo,monospace;font-size:15px}
@@ -277,7 +282,7 @@ pre.snip{margin:0;padding:14px;background:var(--soft);overflow-x:auto;font-size:
  .cal a span{font-size:11px}
  .tok{grid-template-columns:1fr;gap:16px}
  .tok img{width:100%;height:auto}
- .who form{min-width:0;width:100%}
+ .who form{min-width:0;width:100%;flex-basis:100%}
 }
 @media (max-width:360px){h1{font-size:29px}.mark{font-size:17px}}
 @media (prefers-reduced-motion:no-preference){.row{transition:background .15s}}
@@ -295,6 +300,7 @@ const DESC = "One Chain Runner a day, drawn on chain from the clock of the Base 
 const OG_DESC = "One Chain Runner a day, drawn on chain from the clock of the Base chain.";
 
 export function layout(title: string, p: Palette, body: string, image = "/today.png", path = "/", description?: string, index = true): string {
+  description ??= pageDescription(SITE, path, DESC);
   const alt = title.replace(/ \| .*$/, "") + " on " + SITE;
   return `<!doctype html>
 <html lang="en">
@@ -418,7 +424,7 @@ export function staleNote(status: ChainStatus | null | undefined): string {
   if (!status.known) return `<p class="note" role="status">Collection status is unavailable. The chain did not answer. Images and past days still show; ownership is unknown until it does.</p>`;
   if (!status.stale) return "";
   const when = new Date(status.readAt!).toISOString().slice(11, 16);
-  return `<p class="note" role="status">Collection status could not be refreshed. Showing data from ${when} UTC.</p>`;
+  return `<p class="note" role="status">Collection status could not be refreshed. Showing data from ${when} UTC. <a href="">Try again</a>.</p>`;
 }
 
 /**
@@ -426,9 +432,9 @@ export function staleNote(status: ChainStatus | null | undefined): string {
  * through /go. When no wallet is injected the page says what to do instead of
  * failing on a click.
  */
-export function whoBlock(chain: ChainState | null, status?: ChainStatus | null): string {
+export function whoBlock(chain: ChainState | null, status?: ChainStatus | null, value = ""): string {
   const off = !chain && status?.configured;
-  return `<div class="whobox"><div class="who">${chain ? `<button class="cta syne" id="connect" type="button">Connect wallet</button>` : ""}<form action="/go" method="get"><label for="who">Wallet address or ENS name</label><div class="line"><input class="field" id="who" name="who" placeholder="0x1234… or name.eth" autocomplete="off" spellcheck="false" required pattern="^\\s*(0x[0-9a-fA-F]{40}|[a-zA-Z0-9-]+(\\.[a-zA-Z0-9-]+)*\\.eth)\\s*$" title="A 42-character address starting with 0x, or an ENS name ending in .eth"><button class="cta ghost syne" type="submit">View wallet</button></div></form></div>
+  return `<div class="whobox"><div class="who">${chain ? `<button class="cta syne" id="connect" type="button">Connect wallet</button>` : ""}<form action="/go" method="get"><label for="who">Wallet address or ENS name</label><div class="line"><input class="field" id="who" name="who" value="${esc(value)}" placeholder="0x1234… or name.eth" autocomplete="off" spellcheck="false" required pattern="^\\s*(0x[0-9a-fA-F]{40}|[a-zA-Z0-9\\-]+(\\.[a-zA-Z0-9\\-]+)*\\.eth)\\s*$" title="A 42-character address starting with 0x, or an ENS name ending in .eth"><button class="cta ghost syne" type="submit">View wallet</button></div></form></div>
 <p class="msg" id="msg" aria-live="polite">${off ? "The chain did not answer. Viewing a wallet needs it. Try again in a minute." : ""}</p>
 <p class="small" id="last" hidden>Last time here: <a href="/">…</a>.</p></div>`;
 }
@@ -464,11 +470,11 @@ ${walletError.toString()}
 function say(t){if(out)out.textContent=t}
 function here(a){return location.pathname.toLowerCase()===(BASE+a).toLowerCase()}
 function remember(a){try{localStorage.setItem(KEY,a)}catch(e){}}
-function offer(a,label){if(!last||here(a))return;var l=last.querySelector('a');l.href=BASE+a;l.textContent=a.slice(0,6)+'\\u2026'+a.slice(-4);last.firstChild.textContent=label+': ';last.hidden=false}
+function offer(a,label){if(!last||here(a))return;var l=last.querySelector('a');l.href=BASE+a;l.textContent=a.slice(0,6)+'…'+a.slice(-4);last.firstChild.textContent=label+': ';last.hidden=false}
 var who=null;try{who=localStorage.getItem(KEY)}catch(e){}
 if(who&&/^0x[0-9a-fA-F]{40}$/.test(who))offer(who,'Last time here');
 if(!btn)return;var eth=window.ethereum;
-if(!eth||!eth.request){btn.disabled=true;btn.textContent='No wallet detected';say('No wallet detected. Enter a public address to browse, or open this site in your wallet\\u2019s browser to connect.');return}
+if(!eth||!eth.request){btn.disabled=true;btn.textContent='No wallet detected';say('No wallet detected. Enter a public address to browse, or open this site in your wallet’s browser to connect.');return}
 function known(accs){if(!accs||!accs.length){btn.textContent='Connect wallet';btn.onclick=null;btn.disabled=false;return}var a=accs[0];remember(a);if(here(a)){btn.textContent='This is your wallet';btn.disabled=true;return}if(ENTRY){location.replace(BASE+a);return}btn.textContent='Your wallet';btn.disabled=false;btn.onclick=function(){location.href=BASE+a};offer(a,'Connected')}
 eth.request({method:'eth_accounts'}).then(known).catch(function(){});
 if(eth.on){eth.on('accountsChanged',known);eth.on('disconnect',function(){known([])})}
@@ -505,11 +511,10 @@ document.querySelectorAll('[data-dl]').forEach(function(el){el.addEventListener(
   ev.preventDefault();if(busy){say('One download at a time. The other one is still drawing.');return}
   var kind=el.getAttribute('data-dl');var n=el.getAttribute('data-id')||el.getAttribute('data-day');var unit=el.getAttribute('data-unit')||'day';var prefix=el.getAttribute('data-prefix')||PREFIX;
   var pixel=el.hasAttribute('data-pixel')?el.getAttribute('data-pixel')==='1':PIXEL;var bg=el.getAttribute('data-bg')||'#000000';
-  busy=true;var was=el.textContent;el.textContent='\\u2026';el.setAttribute('aria-busy','true');say('');var u=null;
+  busy=true;var was=el.textContent;el.textContent='…';el.setAttribute('aria-busy','true');say('');var u=null;
   try{
     var ctl=new AbortController();var t=setTimeout(function(){ctl.abort()},20000);
-    var res;try{res=await fetch(el.getAttribute('data-src'),{signal:ctl.signal})}finally{clearTimeout(t)}
-    if(!res.ok)throw new Error('the image answered '+res.status);var text=await res.text();
+    var res,text;try{res=await fetch(el.getAttribute('data-src'),{signal:ctl.signal});if(!res.ok)throw new Error('the image answered '+res.status);text=await res.text()}finally{clearTimeout(t)}
     if(kind==='svg'){save(new Blob([text],{type:'image/svg+xml'}),prefix+'-'+unit+'-'+n+'.svg');return}
     text=text.replace(/ width="\\d+" height="\\d+"/,' width="'+size+'" height="'+size+'"');
     u=URL.createObjectURL(new Blob([text],{type:'image/svg+xml'}));var img=new Image();
@@ -591,7 +596,7 @@ if(eth&&eth.on){eth.on('accountsChanged',function(accs){if(!accs||!accs.length||
   eth.on('chainChanged',function(id){if(parseInt(id,16)===parseInt(CFG.chainHex,16))return;say('The wallet switched network. Switch back to '+CFG.name+' to claim.')})}
 btn.addEventListener('click',async function(){
   if(btn.disabled)return;var submitting=false;var from=null;
-  if(!eth||!eth.request){say('No wallet detected. Open this site in your wallet\\u2019s browser, or install one like Rabby, MetaMask or Coinbase Wallet.');return}
+  if(!eth||!eth.request){say('No wallet detected. Open this site in your wallet’s browser, or install one like Rabby, MetaMask or Coinbase Wallet.');return}
   btn.disabled=true;
   try{
     var accs=await eth.request({method:'eth_requestAccounts'});if(!accs||!accs.length)throw new Error('the wallet gave no account');from=accs[0];account=from;
@@ -896,4 +901,10 @@ ${footer()}
   const body = kind === "terms" ? terms : privacy;
   const title = kind === "terms" ? "Terms" : "Privacy";
   return layout(`${title} | ${SITE}`, k.palette, body, `/day/${today.n}.png`, `/${kind}`);
+}
+
+/** A recoverable server failure; never expose a stack trace or collapse to a blank text page. */
+export function serviceError(): string {
+  const body = `<main id="main" class="single">${topBar("Unavailable")}<h1 class="syne">This page could not be loaded</h1><p>Please try again. Your wallet and any transaction already sent are unaffected.</p><nav class="nav" aria-label="Recovery"><a href="">Try again</a><a href="/">Back to the collection</a></nav></main>`;
+  return layout(`Unavailable | ${SITE}`, runnerFor(dayByNumber(1)!.epoch).palette, body, "/today.png", "/", "This page could not be loaded. Try again.", false);
 }

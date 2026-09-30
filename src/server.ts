@@ -1,9 +1,10 @@
+import { sitemapResponse, robotsTxt } from "./seo.ts";
 import { transactionApi } from "./transaction-status.ts";
 import { mintPage } from "./mint-page.ts";
 import { runnerFor } from "./runners.ts";
 import { nowSeconds, dayOfTime, dayByNumber, secondsToStart } from "./chain.ts";
 import { chainState, chainStatus, contractEnabled, readNow, startClaimScan, CONTRACT, CHAIN_ID, type ChainState } from "./contract.ts";
-import { homePage, dayPage, howPage, legalPage, notFound, chainDown, beforeStart, feedXml, goTarget } from "./site.ts";
+import { serviceError, SITE, homePage, dayPage, howPage, legalPage, notFound, chainDown, beforeStart, feedXml, goTarget } from "./site.ts";
 import { explorePage, traitsPage, holderPage, yoursPage, assetsPage, embedPage, wordmarkSvg, PREVIEW_DAYS } from "./pages.ts";
 import { dayJson, daysJson, holderJson, summaryJson, specJson, calendarIcs } from "./api.ts";
 import { dayPng, squarePng } from "./image.ts";
@@ -74,7 +75,7 @@ export async function handle(req: Request): Promise<Response> {
   } catch (e) {
     // A page that throws must not take the connection down with a stack trace in the body.
     console.error(`route ${url.pathname}:`, (e as Error).message);
-    return withHeaders(url.pathname.startsWith("/api/") ? json({ error: "internal error" }, 0, 500) : new Response("internal error", { status: 500, headers: { "content-type": "text/plain" } }), url.pathname);
+    return withHeaders(url.pathname.startsWith("/api/") ? json({ error: "internal error" }, 0, 500) : html(serviceError(), 500), url.pathname);
   }
 }
 
@@ -93,7 +94,7 @@ async function route(url: URL): Promise<Response> {
   const today = dayOfTime(now);
 
   // ---- everything that needs no chain answers before any chain read
-  if (path === "/robots.txt") return new Response("User-agent: *\nAllow: /\nDisallow: /api/\n", { headers: { "content-type": "text/plain; charset=utf-8" } });
+  if (path === "/robots.txt") return new Response(robotsTxt(SITE), { headers: { "content-type": "text/plain; charset=utf-8" } });
   if (path === "/spec.json") return json(specJson(), 3600);
   if (path === "/calendar.ics") return new Response(calendarIcs(dayByNumber(1)!), { headers: { "content-type": "text/calendar; charset=utf-8", "cache-control": "public, max-age=86400" } });
   // Liveness: the process is up. Never depends on the RPC, so a dead RPC never restarts the site.
@@ -104,13 +105,21 @@ async function route(url: URL): Promise<Response> {
     return json({ ok: !s.configured || s.known, day: today?.n ?? 0, now: Number(now), chain: s }, 0, !s.configured || s.known ? 200 : 503);
   }
 
+  if (path.startsWith("/sitemap")) {
+    const pages = today ? ["/", "/explore", "/traits", "/how", "/assets", "/terms", "/privacy"] : ["/", "/how", "/terms", "/privacy"];
+    const tokens = Array.from({ length: today?.n ?? 0 }, (_, i) => "/day/" + (i + 1));
+    const map = sitemapResponse(url, SITE, pages, tokens);
+    if (map) return map;
+  }
+
   if (!today) {
     const dayOne = dayByNumber(1)!;
     if (path === "/how") return html(howPage(dayOne));
     if (path === "/terms" || path === "/privacy") return html(legalPage(path.slice(1) as "terms" | "privacy", dayOne));
     if (path === "/today.svg") return svg(runnerFor(dayOne.epoch).svg, false);
     if (path === "/today.png") return png(dayPng(dayOne, false), false);
-    return html(beforeStart(secondsToStart(now), dayOne));
+    if (path === "/") return html(beforeStart(secondsToStart(now), dayOne));
+    return path.startsWith("/api/") ? json({ error: "no such endpoint" }, 0, 404) : html(notFound(dayOne), 404);
   }
 
   if (path === "/today.png") return png(dayPng(today, false), false);
