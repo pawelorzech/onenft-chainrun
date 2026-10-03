@@ -9,6 +9,7 @@
  * good read is public, so pages and JSON can say how old their data is.
  */
 import { createPublicClient, http, parseAbi, parseAbiItem, type Address, type Hex } from "viem";
+import { readTransport } from "./rpc.ts";
 import { base, baseSepolia } from "viem/chains";
 import { setStartEpoch } from "./chain.ts";
 import { Swr } from "./swr.ts";
@@ -87,7 +88,7 @@ const BACKOFF_MAX_MS = 60_000;
 const RPC_TIMEOUT_MS = Number(process.env.RPC_TIMEOUT_MS ?? 8_000);
 
 export const client = CONTRACT
-  ? createPublicClient({ chain, transport: http(process.env.BASE_RPC_URL, { timeout: RPC_TIMEOUT_MS, retryCount: 1 }) })
+  ? createPublicClient({ chain, transport: readTransport(CHAIN_ID, RPC_TIMEOUT_MS) })
   : null;
 
 export function contractEnabled(): boolean {
